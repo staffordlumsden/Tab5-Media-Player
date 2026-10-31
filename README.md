@@ -21,6 +21,10 @@ Build and SD installation details are in
 31 October 2026 after the AAC/M4A playback reset was fixed and the user
 confirmed the firmware worked as intended.
 
+Version `0.1.2` adds an explicit Console return action, Tab5 Keyboard file
+navigation, and physical-keyboard Wi-Fi password entry without the software
+keyboard.
+
 The original upstream project documentation follows.
 
 ---

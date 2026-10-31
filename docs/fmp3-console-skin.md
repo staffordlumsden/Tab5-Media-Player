@@ -1,4 +1,4 @@
-# fMP3 Player 0.1.1: Console Skin for Tab5
+# fMP3 Player 0.1.2: Console Skin for Tab5
 
 31 October 2026
 
@@ -61,6 +61,20 @@ errors, 191.6x realtime. The physical Tab5 acceptance test also passed:
 on 31 October 2026, after installing 0.1.1, the user confirmed that playback
 worked as intended beyond the previous reset point.
 
+## 0.1.2 Navigation and Physical Keyboard
+
+- A **CONSOLE** action is available in the home, page, audio-player, video,
+  image-viewer, camera-input and file-picker bars. It selects the verified
+  Console boot target and restarts without erasing NVS or SD data.
+- The M5Stack Tab5 clip-on keyboard is exposed as an LVGL keypad input through
+  the BSP's existing HID provider.
+- In the SD file browser, Up/Down moves the selection, Left/Backspace moves to
+  the parent directory, and Return opens the selected item. Grid layout also
+  accepts Left/Right between cells.
+- Wi-Fi password entry no longer creates an on-screen keyboard. The physical
+  Tab5 keyboard types directly into the password field; Enter connects and Esc
+  cancels.
+
 ## Build Environment
 
 The upstream project pins ESP-IDF `6.1.0` at commit
@@ -78,15 +92,15 @@ same commit and the five patches under `esp-devkit/nix/patches/` are applied.
 
 ## Package Verification
 
-The 0.1.1 release build produced:
+The 0.1.2 release build produced:
 
 - image project: `Tab5fMP3Player`
-- image version: `0.1.1`
+- image version: `0.1.2`
 - target: ESP32-P4, 16 MB flash, minimum chip revision 1.0
-- image size: `4,787,968` bytes (`0x490f00`), 454,912 bytes below the slot limit
-- SHA-256: `3abeed45f721d542dfd56a59281df0bceff326922ec1a1d737dcefc1e4d303db`
+- image size: `4,790,944` bytes (`0x491aa0`), 451,936 bytes below the slot limit
+- SHA-256: `1412626c838eb635b4ab1996570c0099f7dfb70fff7d13f9326fb02cc07609ad`
 - maximum package size: 5,242,880 bytes
 - package validation: ESP image magic, chip ID, revision, segment checksum and
   appended SHA-256
-- on-device acceptance: passed on 31 October 2026; audio playback no longer
-  returned to Console after the 0.1.1 runtime fixes
+- on-device acceptance: 0.1.1 passed on 31 October 2026; the 0.1.2 Console
+  button and physical-keyboard controls require physical retest

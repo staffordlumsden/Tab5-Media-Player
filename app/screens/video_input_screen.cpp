@@ -184,6 +184,7 @@ void VideoInputScreen::buildUi() {
 void VideoInputScreen::buildTopBar(lv_obj_t *parent) {
     title_label_ =
         media_top_bar_build(parent, title_.c_str(), [this] { this->back(); }, nullptr).title;
+    media_top_bar_text_button(parent, "CONSOLE", [] { media_player_return_to_console(); }, nullptr);
     if (!format_.width) return;
     media_top_bar_text_button(parent, input_format_label(format_).c_str(),
                               [this] { requestMode(UiMode::InputFormat); }, &format_label_);

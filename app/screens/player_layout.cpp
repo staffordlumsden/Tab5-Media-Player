@@ -4,6 +4,7 @@
  */
 
 #include "player_layout.hpp"
+#include "media_player.hpp"
 #include "screens/media_controls.hpp"
 #include "resources.h"
 #include "widgets.hpp"
@@ -41,6 +42,14 @@ static lv_obj_t *build_navigation(lv_obj_t *parent, const char *title,
     lv_obj_t *back = lv_navigation_back_create(
         navigation, title, [on_back = std::move(on_back)](lv_event_t *) { on_back(); });
     *back_label = lv_navigation_back_label(back);
+    lv_obj_t *console = lv_button_create(lv_navigation_actions(navigation),
+                                         LV_BUTTON_STYLE_NAVIGATION);
+    lv_obj_set_height(console, 72);
+    lv_obj_set_style_pad_hor(console, 18, 0);
+    lv_button_set_text(console, "CONSOLE");
+    lv_obj_add_event_fn(console, LV_EVENT_CLICKED, [](lv_event_t *) {
+        media_player_return_to_console();
+    });
     return navigation;
 }
 

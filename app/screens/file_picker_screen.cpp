@@ -22,6 +22,14 @@ FilePickerScreen::~FilePickerScreen() {
 void FilePickerScreen::build() {
     createNavigation("", LV_NAVIGATION_STYLE_LIST | LV_NAVIGATION_STYLE_BACK);
     back_button_ = lv_obj_get_parent(navigation_title_);
+    lv_obj_t *console = lv_button_create(lv_navigation_actions(navigation_),
+                                         LV_BUTTON_STYLE_NAVIGATION);
+    lv_obj_set_height(console, 72);
+    lv_obj_set_style_pad_hor(console, 18, 0);
+    lv_button_set_text(console, "CONSOLE");
+    lv_obj_add_event_fn(console, LV_EVENT_CLICKED, [](lv_event_t *) {
+        media_player_return_to_console();
+    });
 
     auto footer = lv_container_create(root_, LV_FLEX_FLOW_ROW);
     lv_obj_set_size(footer, lv_pct(100), LV_SIZE_CONTENT);

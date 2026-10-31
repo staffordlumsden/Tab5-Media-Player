@@ -45,7 +45,6 @@ private:
     lv_obj_t *mac_value_ = nullptr;
     lv_obj_t *list_ = nullptr;
     lv_obj_t *password_modal_ = nullptr;
-    lv_obj_t *keyboard_ = nullptr;
     lv_obj_t *connecting_modal_ = nullptr;
 
     static void post(std::weak_ptr<WifiPage> weak, std::function<void(WifiPage &)> fn);

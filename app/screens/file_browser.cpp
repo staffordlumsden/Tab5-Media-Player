@@ -174,8 +174,16 @@ void FileBrowser::build_view() {
     body_ = list_;
     lv_obj_move_to_index(list_, 0);
     lv_obj_add_event_fn(list_, LV_EVENT_SCROLL, [this](lv_event_t *) { request_visible(); });
+    lv_obj_add_event_fn(list_, LV_EVENT_KEY, [this](lv_event_t *event) { handle_key(event); });
+    if (lv_group_t *group = lv_group_get_default()) {
+        lv_group_remove_obj(list_);
+        lv_group_add_obj(group, list_);
+        lv_group_focus_obj(list_);
+    }
     lv_obj_update_layout(contents_);
     if (current.scroll_y > 0) lv_obj_scroll_to_y(list_, current.scroll_y, LV_ANIM_OFF);
+    keyboard_index_ = std::min(keyboard_index_, current.entries.size() - 1);
+    focus_keyboard_entry();
     observe();
 }
 
@@ -213,6 +221,7 @@ void FileBrowser::show_level() {
 
 void FileBrowser::push(std::string path) {
     if (list_) level().scroll_y = lv_obj_get_scroll_y(list_);
+    keyboard_index_ = 0;
     levels_.push_back({});
     levels_.back().title = file_browser_title(path);
     levels_.back().path = std::move(path);
@@ -221,12 +230,14 @@ void FileBrowser::push(std::string path) {
 
 void FileBrowser::go_back() {
     if (!can_go_back()) return;
+    keyboard_index_ = 0;
     levels_.pop_back();
     show_level();
 }
 
 void FileBrowser::go_to_root() {
     if (levels_.size() == 1) return;
+    keyboard_index_ = 0;
     levels_.resize(1);
     show_level();
 }
@@ -495,6 +506,7 @@ int32_t FileBrowser::rowHeight() const {
 lv_obj_t *FileBrowser::createRow(lv_obj_t *parent) {
     const bool list = layout_ == BrowserLayout::List;
     lv_obj_t *row = lv_list_row_create(parent);
+    if (lv_group_get_default()) lv_group_remove_obj(row);
     lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(row, 24, 0);
@@ -557,11 +569,13 @@ void FileBrowser::bindRow(lv_obj_t *row, std::size_t index) {
     lv_obj_set_style_text_opa(arrow, opa, 0);
     if (frame != row) lv_obj_set_style_bg_opa(frame, opa, 0);
     lv_obj_set_clickable(row, entry_clickable(index));
-    lv_obj_set_state(row, LV_STATE_CHECKED, selecting_ && selected_[index]);
+    lv_obj_set_state(row, LV_STATE_CHECKED,
+                     selecting_ ? selected_[index] : index == keyboard_index_);
     bind_thumbnail(frame, index, enabled);
 }
 
 void FileBrowser::didSelectRow(std::size_t index) {
+    keyboard_index_ = index;
     if (selecting_) {
         toggle_selected(index);
         return;
@@ -598,6 +612,7 @@ int32_t FileBrowser::rowSpacing() const {
 
 lv_obj_t *FileBrowser::createCell(lv_obj_t *parent) {
     lv_obj_t *cell = lv_container_create(parent);
+    if (lv_group_get_default()) lv_group_remove_obj(cell);
     lv_obj_set_scrollable(cell, false);
     /* OVERFLOW_VISIBLE only lets children past the cell by its ext draw size. */
     lv_obj_set_overflow_visible(cell, true);
@@ -649,7 +664,8 @@ void FileBrowser::bindCell(lv_obj_t *cell, std::size_t index) {
     lv_obj_t *name = lv_obj_get_child(body, 1);
     drop_thumbnail(frame);
     lv_obj_set_clickable(cell, entry_clickable(index));
-    lv_obj_set_state(cell, LV_STATE_CHECKED, selecting_ && selected_[index]);
+    lv_obj_set_state(cell, LV_STATE_CHECKED,
+                     selecting_ ? selected_[index] : index == keyboard_index_);
     lv_label_set_text(name, entry.name.c_str());
     lv_obj_set_style_text_opa(name, enabled ? kEnabledOpa : kDisabledOpa, 0);
     bind_thumbnail(frame, index, enabled);
@@ -657,6 +673,58 @@ void FileBrowser::bindCell(lv_obj_t *cell, std::size_t index) {
 
 void FileBrowser::didSelectCell(std::size_t index) {
     didSelectRow(index);
+}
+
+void FileBrowser::focus_keyboard_entry() {
+    if (!list_ || entries().empty()) return;
+    keyboard_index_ = std::min(keyboard_index_, entries().size() - 1);
+    show_entry(keyboard_index_);
+    lv_obj_update_layout(list_);
+    rebind_entry(keyboard_index_);
+}
+
+void FileBrowser::handle_key(lv_event_t *event) {
+    if (!list_ || entries().empty()) return;
+    const uint32_t key = *static_cast<uint32_t *>(lv_event_get_param(event));
+    const std::size_t step = layout_ == BrowserLayout::Grid
+                                 ? std::max<std::size_t>(lv_grid_column_count(list_), 1)
+                                 : 1;
+    std::size_t next = keyboard_index_;
+    switch (key) {
+    case LV_KEY_DOWN:
+    case LV_KEY_NEXT:
+        next = std::min(keyboard_index_ + step, entries().size() - 1);
+        break;
+    case LV_KEY_UP:
+    case LV_KEY_PREV:
+        next = keyboard_index_ > step ? keyboard_index_ - step : 0;
+        break;
+    case LV_KEY_RIGHT:
+        if (layout_ != BrowserLayout::Grid) return;
+        next = std::min(keyboard_index_ + 1, entries().size() - 1);
+        break;
+    case LV_KEY_LEFT:
+        if (layout_ != BrowserLayout::Grid) {
+            go_back();
+            return;
+        }
+        next = keyboard_index_ > 0 ? keyboard_index_ - 1 : 0;
+        break;
+    case LV_KEY_ENTER:
+        didSelectRow(keyboard_index_);
+        return;
+    case LV_KEY_ESC:
+    case LV_KEY_BACKSPACE:
+        go_back();
+        return;
+    default:
+        return;
+    }
+    if (next == keyboard_index_) return;
+    const std::size_t previous = keyboard_index_;
+    keyboard_index_ = next;
+    rebind_entry(previous);
+    focus_keyboard_entry();
 }
 
 void FileBrowser::bind_thumbnail(lv_obj_t *frame, std::size_t index, bool enabled) {

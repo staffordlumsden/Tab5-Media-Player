@@ -375,6 +375,8 @@ void VideoPlayerScreen::buildTopBar(lv_obj_t *parent) {
     title_label_ = bar.title;
     info_button_ = bar.info_button;
     lv_obj_set_state(info_button_, LV_STATE_DISABLED, !player_media_summary().valid);
+    media_top_bar_text_button(parent, "CONSOLE", [] { media_player_return_to_console(); }, nullptr);
+    media_top_bar_fit_title(parent, title_label_);
 }
 
 void VideoPlayerScreen::buildBottomBar(lv_obj_t *parent, bool portrait) {

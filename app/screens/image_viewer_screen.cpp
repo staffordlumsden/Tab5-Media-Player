@@ -126,6 +126,9 @@ void ImageViewerScreen::buildUi() {
                                                 [this] { requestMode(UiMode::Info); });
     title_label_ = bar.title;
     info_button_ = bar.info_button;
+    media_top_bar_text_button(top_bar_, "CONSOLE", [] { media_player_return_to_console(); },
+                              nullptr);
+    media_top_bar_fit_title(top_bar_, title_label_);
 
     bottom_bar_ = create_bar(root_, lv_pct(100), kBarHeight, LV_ALIGN_BOTTOM_MID);
     buildBottomBar(bottom_bar_);

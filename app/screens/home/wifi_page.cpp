@@ -98,7 +98,7 @@ void WifiPage::build(lv_obj_t *contents) {
 
 void WifiPage::save_state() {
     switch_ = status_ = ip_row_ = ip_value_ = mac_row_ = mac_value_ = list_ = nullptr;
-    password_modal_ = keyboard_ = connecting_modal_ = nullptr;
+    password_modal_ = connecting_modal_ = nullptr;
 }
 
 void WifiPage::on_wifi_state(const wifi::Status &) {
@@ -270,6 +270,8 @@ void WifiPage::open_password(const std::string &ssid) {
     auto screen = lv_obj_get_screen(list_);
     password_modal_ = lv_modal_open(screen);
     lv_modal_title_create(password_modal_, ("Connect to " + ssid).c_str());
+    lv_modal_message_create(password_modal_,
+                            "Type with the Tab5 keyboard. Enter connects; Esc cancels.");
 
     auto textarea = lv_textarea_create(password_modal_);
     lv_textarea_set_one_line(textarea, true);
@@ -281,7 +283,8 @@ void WifiPage::open_password(const std::string &ssid) {
     auto buttons = lv_container_create(password_modal_, LV_FLEX_FLOW_ROW);
     lv_obj_set_style_pad_column(buttons, 16, 0);
 
-    // Deleting the keyboard inside its own event hangs LVGL, so closing goes through post().
+    // Closing from a key event is deferred so LVGL does not delete the active
+    // text area inside its own callback.
     auto weak = weak_from_this();
     auto cancel = [weak](lv_event_t *) { post(weak, [](WifiPage &page) { page.close_password(); }); };
     auto submit = [weak, textarea, ssid](lv_event_t *) {
@@ -293,26 +296,18 @@ void WifiPage::open_password(const std::string &ssid) {
     };
     lv_modal_button_create(buttons, "Cancel", LV_MODAL_BUTTON_TYPE_SECONDARY, cancel);
     lv_modal_button_create(buttons, "Connect", LV_MODAL_BUTTON_TYPE_PRIMARY, submit);
-
-    keyboard_ = lv_keyboard_create(screen);
-    lv_obj_set_ignore_layout(keyboard_, true);
-    lv_obj_set_size(keyboard_, LV_PCT(100), LV_PCT(40));
-    lv_obj_set_font_role(keyboard_, LV_WIDGETS_FONT_BODY);
-    lv_obj_align(keyboard_, LV_ALIGN_BOTTOM_MID, 0, 0);
-    lv_keyboard_set_textarea(keyboard_, textarea);
-    lv_obj_add_event_fn(keyboard_, LV_EVENT_READY, submit);
-    lv_obj_add_event_fn(keyboard_, LV_EVENT_CANCEL, cancel);
-
-    lv_obj_update_layout(screen);
-    const int32_t above = lv_obj_get_height(screen) - lv_obj_get_height(keyboard_);
-    lv_obj_align(password_modal_, LV_ALIGN_TOP_MID, 0,
-                 std::max<int32_t>(0, (above - lv_obj_get_height(password_modal_)) / 2));
+    lv_obj_add_event_fn(textarea, LV_EVENT_READY, submit);
+    lv_obj_add_event_fn(textarea, LV_EVENT_CANCEL, cancel);
+    if (lv_group_t *group = lv_group_get_default()) {
+        lv_group_focus_obj(textarea);
+        lv_group_set_editing(group, true);
+    }
 }
 
 void WifiPage::close_password() {
-    if (keyboard_) lv_obj_delete(keyboard_);
     if (password_modal_) lv_modal_close(password_modal_);
-    keyboard_ = password_modal_ = nullptr;
+    if (lv_group_t *group = lv_group_get_default()) lv_group_set_editing(group, false);
+    password_modal_ = nullptr;
 }
 
 void WifiPage::connect(const std::string &ssid, const std::string &password) {

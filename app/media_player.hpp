@@ -43,3 +43,6 @@ SharedSram media_player_acquire_sram();
 void media_player_release_sram();
 
 esp_err_t media_player_set_display_pixel_format(bsp_pixel_format_t format);
+
+/* Return to the resident Console using the verified SD-app boot target. */
+void media_player_return_to_console();

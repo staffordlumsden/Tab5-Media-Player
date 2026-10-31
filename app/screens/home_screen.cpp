@@ -44,6 +44,17 @@ static lv_obj_t *pane_create(lv_obj_t *parent, lv_color_t bg_color) {
     return pane;
 }
 
+static void add_console_button(lv_obj_t *navigation) {
+    lv_obj_t *actions = lv_navigation_actions(navigation);
+    lv_obj_t *button = lv_button_create(actions, LV_BUTTON_STYLE_NAVIGATION);
+    lv_obj_set_height(button, 72);
+    lv_obj_set_style_pad_hor(button, 18, 0);
+    lv_button_set_text(button, "CONSOLE");
+    lv_obj_add_event_fn(button, LV_EVENT_CLICKED, [](lv_event_t *) {
+        media_player_return_to_console();
+    });
+}
+
 void HomeScreen::build() {
     std::weak_ptr<HomeScreen> weak = std::static_pointer_cast<HomeScreen>(shared_from_this());
     ui_theme::set_change_listener([weak] {
@@ -194,6 +205,7 @@ void HomeScreen::layout() {
 void HomeScreen::build_menu() {
     auto navigation = lv_navigation_create(menu_pane_);
     lv_navigation_title_create(navigation, "fMP3 Player");
+    add_console_button(navigation);
 
     menu_contents_ = lv_spacer_create(menu_pane_, LV_PCT(100), LV_SIZE_CONTENT, 1);
     lv_obj_set_flex_flow(menu_contents_, LV_FLEX_FLOW_COLUMN);
@@ -235,6 +247,7 @@ void HomeScreen::build_navigation(HomePage *page) {
         lv_navigation_title_create(navigation_, page->title().c_str());
     }
     page->build_navigation(navigation_);
+    add_console_button(navigation_);
 }
 
 /* Deferred: the caller is usually a button inside the bar being replaced. */

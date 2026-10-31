@@ -82,6 +82,7 @@ private:
     lv_obj_t *body_ = nullptr;
     lv_obj_t *list_ = nullptr;
     std::size_t requested_first_ = SIZE_MAX;
+    std::size_t keyboard_index_ = 0;
     uint32_t token_ = 0;
     uint32_t idle_token_ = 0;
     bool prefetched_ = false;
@@ -110,6 +111,8 @@ private:
     bool entry_clickable(std::size_t index) const;
     void request_visible();
     void prefetch_rest();
+    void handle_key(lv_event_t *event);
+    void focus_keyboard_entry();
     void release_requests();
     static void meta_ready(const std::string &path);
     static bool keep_visible(const char *path, void *ctx);

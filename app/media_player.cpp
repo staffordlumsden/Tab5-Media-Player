@@ -17,6 +17,7 @@
 #include "bench/mpeg2_bench.hpp"
 #include "bench/opus_bench.hpp"
 #include "media/media_cache.hpp"
+#include "physical_keyboard.hpp"
 #include "playback/player.hpp"
 #include "screen_manager.hpp"
 #include "screens/home_screen.hpp"
@@ -150,6 +151,14 @@ esp_err_t media_player_mount_usb() {
     return usb_host::mount(drive, kUsbMountPoint);
 }
 
+void media_player_return_to_console() {
+#ifdef ESP_PLATFORM
+    ESP_LOGI(TAG, "returning to resident Console");
+    const esp_err_t err = tab5_app_boot_return_to_console();
+    if (err != ESP_OK) ESP_LOGE(TAG, "Console return failed: %s", esp_err_to_name(err));
+#endif
+}
+
 bool media_player_usb_connected() {
     std::lock_guard<std::mutex> guard(s_usb_lock);
     return s_usb_drive != nullptr;
@@ -197,6 +206,8 @@ void app_entry() {
     bsp_config.dispatch.task_priority = 6;
     bsp_config.dispatch.task_affinity = 1;
     bsp_config.audio.speaker_mode = BSP_AUDIO_SPEAKER_MODE_AUTO;
+    bsp_config.keyboard.mode = BSP_KEYBOARD_MODE_HID;
+    bsp_config.keyboard.detect = BSP_KEYBOARD_DETECT_AUTO;
     bsp_init(&bsp_config);
     settings_apply();
     audio_output_init();
@@ -207,6 +218,7 @@ void app_entry() {
         return;
     }
     ui_font_init();
+    physical_keyboard_start();
     ui_theme::init(settings_dark_mode());
 #ifdef ESP_PLATFORM
     ESP_LOGI(TAG, "internal heap free after display init: %u",
