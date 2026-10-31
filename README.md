@@ -17,6 +17,10 @@ Bespoke Tab5 Console interface language:
 Build and SD installation details are in
 [`docs/fmp3-console-skin.md`](docs/fmp3-console-skin.md).
 
+**Physical acceptance:** fMP3 Player `0.1.1` was accepted on the Tab5 on
+31 October 2026 after the AAC/M4A playback reset was fixed and the user
+confirmed the firmware worked as intended.
+
 The original upstream project documentation follows.
 
 ---

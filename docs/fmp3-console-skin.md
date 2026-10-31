@@ -57,8 +57,9 @@ found two device-runtime gaps and added diagnostics for any remaining fault:
 
 The supplied Africa M4A (`AAC-LC`, 48 kHz stereo) was decoded in full through
 `audf_aac` under AddressSanitizer and UBSan in HE-v2 mode: 13,871 packets, 0
-errors, 191.6x realtime. The remaining acceptance test is the same track on the
-physical Tab5 after installing 0.1.1.
+errors, 191.6x realtime. The physical Tab5 acceptance test also passed:
+on 31 October 2026, after installing 0.1.1, the user confirmed that playback
+worked as intended beyond the previous reset point.
 
 ## Build Environment
 
@@ -87,5 +88,5 @@ The 0.1.1 release build produced:
 - maximum package size: 5,242,880 bytes
 - package validation: ESP image magic, chip ID, revision, segment checksum and
   appended SHA-256
-- on-device acceptance: required after installation from Console; a successful
-  host build or SD copy is not physical display/audio acceptance
+- on-device acceptance: passed on 31 October 2026; audio playback no longer
+  returned to Console after the 0.1.1 runtime fixes
