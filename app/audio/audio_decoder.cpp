@@ -27,7 +27,7 @@ static const char *TAG = "audio_decoder";
 static constexpr std::size_t kPcmBytes = 64 * 1024;
 static constexpr int64_t kOpusPrerollUs = 80000;
 static constexpr std::size_t kMpegCarryBytes = 4 * 1024;
-static constexpr uint32_t kOutputStackBytes = 4 * 1024;
+static constexpr uint32_t kOutputStackBytes = 8 * 1024;
 static constexpr UBaseType_t kOutputPriority = 7;
 
 enum class Mode {

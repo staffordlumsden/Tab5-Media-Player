@@ -7,7 +7,7 @@ file(GLOB_RECURSE APP_SRCS ${APP_GLOB_FLAGS}
      "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
      "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 
-set(APP_REQUIRES bsp ui_framework ui_theme harness image_framework media_framework vdec_common h264_dec mpeg2_dec usb_host airplay jpeg_decode_enhanced esp_timer wifi)
+set(APP_REQUIRES bsp ui_framework ui_theme tab5_app_boot harness image_framework media_framework vdec_common h264_dec mpeg2_dec usb_host airplay jpeg_decode_enhanced esp_timer wifi)
 if(ESP_PLATFORM)
     list(APPEND APP_REQUIRES esp_mm esp_driver_jpeg esp_driver_ppa esp_driver_dma hal nvs_flash)
 endif()

@@ -26,6 +26,7 @@
 #include "screens/video_input_screen.hpp"
 #include "screens/video_player_screen.hpp"
 #include "settings.hpp"
+#include "tab5_app_boot.h"
 #include "ui_font.hpp"
 #include "ui_orientation.hpp"
 #include "ui_theme.hpp"
@@ -33,6 +34,11 @@
 #include "usb_host_msc.hpp"
 #include "usb_host_uac.hpp"
 #include "usb_host_uvc.hpp"
+#ifdef ESP_PLATFORM
+#include "esp_app_desc.h"
+#include "esp_system.h"
+#include <cstdio>
+#endif
 #ifndef ESP_PLATFORM
 #include "wifi_sim.hpp"
 #endif
@@ -49,6 +55,46 @@ static std::mutex s_usb_lock;
 static std::shared_ptr<usb_host::MscDevice> s_usb_drive;
 static std::shared_ptr<usb_host::UvcDevice> s_camera;
 static std::shared_ptr<usb_host::UacCaptureDevice> s_capture_audio;
+#ifdef ESP_PLATFORM
+static esp_reset_reason_t s_boot_reset_reason;
+static bool s_boot_confirmed;
+static bool s_diagnostic_written;
+
+static const char *reset_reason_name(esp_reset_reason_t reason) {
+    switch (reason) {
+    case ESP_RST_POWERON: return "POWERON";
+    case ESP_RST_EXT: return "EXTERNAL";
+    case ESP_RST_SW: return "SOFTWARE";
+    case ESP_RST_PANIC: return "PANIC";
+    case ESP_RST_INT_WDT: return "INTERRUPT_WDT";
+    case ESP_RST_TASK_WDT: return "TASK_WDT";
+    case ESP_RST_WDT: return "WATCHDOG";
+    case ESP_RST_DEEPSLEEP: return "DEEPSLEEP";
+    case ESP_RST_BROWNOUT: return "BROWNOUT";
+    case ESP_RST_SDIO: return "SDIO";
+    case ESP_RST_USB: return "USB";
+    case ESP_RST_JTAG: return "JTAG";
+    case ESP_RST_EFUSE: return "EFUSE";
+    case ESP_RST_PWR_GLITCH: return "POWER_GLITCH";
+    case ESP_RST_CPU_LOCKUP: return "CPU_LOCKUP";
+    default: return "UNKNOWN";
+    }
+}
+
+static void write_reset_diagnostic() {
+    if (s_diagnostic_written) return;
+    FILE *file = std::fopen("/sdcard/fmp3-diagnostics.log", "a");
+    if (!file) return;
+    const esp_app_desc_t *desc = esp_app_get_description();
+    std::fprintf(file,
+                 "project=%s version=%s reset=%s internal=%u psram=%u\n",
+                 desc->project_name, desc->version, reset_reason_name(s_boot_reset_reason),
+                 (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+                 (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    std::fclose(file);
+    s_diagnostic_written = true;
+}
+#endif
 
 static SharedSram shared_sram() {
     const std::size_t half = kSharedSramBytes / 2;
@@ -77,10 +123,19 @@ static esp_err_t display_init() {
 }
 
 esp_err_t media_player_mount_sd() {
-    if (bsp_sd_is_mounted()) return ESP_OK;
+    if (bsp_sd_is_mounted()) {
+#ifdef ESP_PLATFORM
+        write_reset_diagnostic();
+#endif
+        return ESP_OK;
+    }
     bsp_sd_mount_config_t config = {};
     config.psram_bounce_buffer = true;
-    return bsp_sd_mount(kSdMountPoint, &config);
+    const esp_err_t err = bsp_sd_mount(kSdMountPoint, &config);
+#ifdef ESP_PLATFORM
+    if (err == ESP_OK) write_reset_diagnostic();
+#endif
+    return err;
 }
 
 esp_err_t media_player_mount_usb() {
@@ -130,6 +185,10 @@ esp_err_t media_player_set_display_pixel_format(bsp_pixel_format_t format) {
 }
 
 void app_entry() {
+#ifdef ESP_PLATFORM
+    s_boot_reset_reason = esp_reset_reason();
+    ESP_LOGW(TAG, "boot reset reason: %s", reset_reason_name(s_boot_reset_reason));
+#endif
     settings_init();
 
     bsp_config_t bsp_config = {};
@@ -273,5 +332,22 @@ void app_entry() {
         auto home = std::make_shared<HomeScreen>();
         s_home = home;
         screen_manager.load(home);
+#ifdef ESP_PLATFORM
+        /* Confirm only after the LVGL screen has had a presentation interval.
+         * This also selects Console for the next deliberate reset. */
+        lv_timer_create([](lv_timer_t *timer) {
+            const esp_err_t err = tab5_app_boot_ready(true);
+            s_boot_confirmed = err == ESP_OK;
+            ESP_LOGI(TAG, "SD app boot confirmation: %s", esp_err_to_name(err));
+            lv_timer_delete(timer);
+        }, 250, nullptr);
+        lv_timer_create([](lv_timer_t *timer) {
+            if (!s_boot_confirmed) {
+                ESP_LOGE(TAG, "SD app confirmation timed out; returning to Console");
+                tab5_app_boot_return_to_console();
+            }
+            lv_timer_delete(timer);
+        }, 15000, nullptr);
+#endif
     });
 }

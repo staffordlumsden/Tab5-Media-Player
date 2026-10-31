@@ -1,4 +1,4 @@
-# fMP3 Player 0.1.0: Console Skin for Tab5
+# fMP3 Player 0.1.1: Console Skin for Tab5
 
 31 October 2026
 
@@ -40,6 +40,26 @@ therefore:
 
 The package is installed from **Console → SD Apps** and launches into `ota_1`.
 
+## 0.1.1 Playback Reset Repair
+
+The first device run returned to Console during AAC/M4A playback. Investigation
+found two device-runtime gaps and added diagnostics for any remaining fault:
+
+- The app never confirmed its pending OTA image or selected Console as its next
+  boot target. It now calls the shared `tab5_app_boot_ready()` lifecycle after
+  first-frame presentation, matching the other SD applications, and returns to
+  Console if confirmation does not complete within 15 seconds.
+- `media_audio` executes the AAC/PIE decoder kernels on an 8 KiB SIMD-capable
+  stack instead of a 4 KiB non-SIMD stack. The PCM output task stack is also
+  enlarged to 8 KiB.
+- On the first SD mount after each launch, the app appends the previous reset
+  reason and heap snapshot to `/fmp3-diagnostics.log` on the card.
+
+The supplied Africa M4A (`AAC-LC`, 48 kHz stereo) was decoded in full through
+`audf_aac` under AddressSanitizer and UBSan in HE-v2 mode: 13,871 packets, 0
+errors, 191.6x realtime. The remaining acceptance test is the same track on the
+physical Tab5 after installing 0.1.1.
+
 ## Build Environment
 
 The upstream project pins ESP-IDF `6.1.0` at commit
@@ -57,13 +77,13 @@ same commit and the five patches under `esp-devkit/nix/patches/` are applied.
 
 ## Package Verification
 
-The 0.1.0 release build produced:
+The 0.1.1 release build produced:
 
 - image project: `Tab5fMP3Player`
-- image version: `0.1.0`
+- image version: `0.1.1`
 - target: ESP32-P4, 16 MB flash, minimum chip revision 1.0
-- image size: `4,778,848` bytes (`0x48eb60`), 464,032 bytes below the slot limit
-- SHA-256: `8c420bbc2f47de2b21387c82aaa227d70bdb8979fcdf45782505447223c5d3d6`
+- image size: `4,787,968` bytes (`0x490f00`), 454,912 bytes below the slot limit
+- SHA-256: `3abeed45f721d542dfd56a59281df0bceff326922ec1a1d737dcefc1e4d303db`
 - maximum package size: 5,242,880 bytes
 - package validation: ESP image magic, chip ID, revision, segment checksum and
   appended SHA-256

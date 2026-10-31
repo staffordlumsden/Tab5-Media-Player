@@ -23,7 +23,10 @@ static const char *TAG = "player";
 static constexpr int kAudioSlots = 8;
 static constexpr uint32_t kIdleTimeoutMs = 1500;
 static constexpr int64_t kAudioResyncUs = 250000;
-static constexpr uint32_t kAudioStackBytes = 4 * 1024;
+/* The decoder tasks execute P4 PIE kernels. Their 128-bit register save state
+ * must land on a SIMD-capable stack; the previous 4 KiB non-SIMD allocation
+ * could corrupt adjacent heap during a long AAC/MP3 decode. */
+static constexpr uint32_t kAudioStackBytes = 8 * 1024;
 static constexpr uint32_t kAudioStepMs = 20;
 static constexpr uint32_t kCommandSendMs = 1000;
 static constexpr uint32_t kCloseTimeoutMs = 8000;
@@ -193,7 +196,7 @@ static audf_aac_he_t aac_he_for(CodecId video) {
 #ifdef ESP_PLATFORM
 static BaseType_t audio_task_create(uint32_t caps) {
     return xTaskCreatePinnedToCoreWithCaps(audio_task, "media_audio", kAudioStackBytes, nullptr, 6,
-                                           &s_audio_task, tskNO_AFFINITY, caps | MALLOC_CAP_8BIT);
+                                           &s_audio_task, tskNO_AFFINITY, caps);
 }
 #endif
 
@@ -206,10 +209,10 @@ static bool audio_task_start() {
     xSemaphoreTake(s_audio_stopped, 0);
     s_audio_quit = false;
 #ifdef ESP_PLATFORM
-    BaseType_t created = audio_task_create(MALLOC_CAP_INTERNAL);
+    BaseType_t created = audio_task_create(MALLOC_CAP_SIMD);
     if (created != pdPASS) {
-        ESP_LOGW(TAG, "audio task stack falls back to PSRAM");
-        created = audio_task_create(MALLOC_CAP_SPIRAM);
+        ESP_LOGW(TAG, "SIMD audio task stack unavailable, falling back to PSRAM");
+        created = audio_task_create(MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     }
 #else
     const BaseType_t created =
