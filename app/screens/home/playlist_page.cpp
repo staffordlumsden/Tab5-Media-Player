@@ -25,8 +25,6 @@ static constexpr int32_t kTrackThumbSide = 56;
 static constexpr ImageSize kTrackThumbBox = { kTrackThumbSide, kTrackThumbSide };
 static constexpr int32_t kWideRowHeight = 132;
 static constexpr ImageSize kWideThumbBox = { 192, 108 };
-static constexpr uint32_t kWideThumbColor = 0xeeeeee;
-
 static PlaylistPage *s_visible;
 
 static int32_t body_line_height() {
@@ -83,15 +81,16 @@ PlaylistPage::~PlaylistPage() {
 
 void PlaylistPage::build(lv_obj_t *contents) {
     lv_obj_set_scrollable(contents, false);
-    lv_obj_set_style_bg_color(contents, lv_color_white(), 0);
+    lv_obj_set_style_bg_color(contents, ui_theme::color(ui_theme::colors().surface), 0);
     lv_obj_set_style_bg_opa(contents, LV_OPA_COVER, 0);
+    lv_obj_set_style_text_color(contents, ui_theme::color(ui_theme::colors().text), 0);
     if (!opened_ || file_.items.empty()) {
         lv_obj_set_flex_align(contents, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
                               LV_FLEX_ALIGN_CENTER);
         lv_obj_t *label = lv_label_create(contents);
         lv_label_set_text(label, opened_ ? "No files" : "Cannot open playlist");
         lv_obj_set_font_role(label, LV_WIDGETS_FONT_BODY);
-        lv_obj_set_style_text_color(label, lv_color_hex(0x808080), 0);
+        lv_obj_set_style_text_color(label, ui_theme::color(ui_theme::colors().muted), 0);
         return;
     }
     list_ = lv_list_create(contents, this);
@@ -206,8 +205,8 @@ lv_obj_t *PlaylistPage::createRow(lv_obj_t *parent) {
     if (tracks()) {
         lv_obj_set_style_pad_column(row, 16, 0);
         lv_obj_t *frame =
-            thumb_frame_create(row, kTrackThumbBox, kPlayerArtworkColor, TABLER_MUSIC, &icon_28);
-        lv_obj_set_style_text_color(lv_obj_get_child(frame, 0), lv_color_hex(kPlayerArtworkIconColor),
+            thumb_frame_create(row, kTrackThumbBox, player_artwork_color(), TABLER_MUSIC, &icon_28);
+        lv_obj_set_style_text_color(lv_obj_get_child(frame, 0), ui_theme::color(player_artwork_icon_color()),
                                     0);
         lv_obj_t *text = lv_container_create(row);
         lv_obj_set_flex_grow(text, 1);
@@ -219,11 +218,11 @@ lv_obj_t *PlaylistPage::createRow(lv_obj_t *parent) {
             lv_obj_set_size(label, lv_pct(100), body_line_height());
             lv_obj_set_font_role(label, LV_WIDGETS_FONT_BODY);
             lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_DOTS);
-            if (i) lv_obj_set_style_text_color(label, lv_color_hex(kPlayerSubtitleColor), 0);
+            if (i) lv_obj_set_style_text_color(label, ui_theme::color(player_subtitle_color()), 0);
         }
     } else {
         lv_obj_set_style_pad_column(row, 24, 0);
-        thumb_frame_create(row, kWideThumbBox, kWideThumbColor,
+        thumb_frame_create(row, kWideThumbBox, ui_theme::colors().surface_pressed,
                            file_.kind == MediaKind::Image ? TABLER_PHOTO : TABLER_MOVIE, &icon_48);
         lv_obj_t *name = lv_label_create(row);
         lv_obj_set_flex_grow(name, 1);

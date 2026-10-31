@@ -5,17 +5,18 @@
 
 #pragma once
 #include "lvgl.hpp"
+#include "ui_theme.hpp"
 
 #include <cstdint>
 #include <functional>
 #include <initializer_list>
 #include <string>
 
-inline constexpr uint32_t kPlayerForegroundColor = 0x101010;
-inline constexpr uint32_t kPlayerTrackColor = 0xd0d0d0;
-inline constexpr uint32_t kPlayerArtworkColor = 0xdcdcdc;
-inline constexpr uint32_t kPlayerArtworkIconColor = 0x9e9e9e;
-inline constexpr uint32_t kPlayerSubtitleColor = 0x707070;
+inline uint32_t player_foreground_color() { return ui_theme::colors().text; }
+inline uint32_t player_track_color() { return ui_theme::colors().surface_pressed; }
+inline uint32_t player_artwork_color() { return ui_theme::colors().surface_pressed; }
+inline uint32_t player_artwork_icon_color() { return ui_theme::colors().muted; }
+inline uint32_t player_subtitle_color() { return ui_theme::colors().muted; }
 inline constexpr int32_t kPlayerPad = 24;
 inline constexpr int32_t kPlayerIconButton = 72;
 inline constexpr int32_t kPlayerArtworkSide = 552;

@@ -14,3 +14,4 @@ simulator/usb
 simulator/uvc
 simulator/nvs_data.toml
 target
+artifacts/

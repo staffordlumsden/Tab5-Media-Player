@@ -6,6 +6,7 @@
 #include "file_picker_screen.hpp"
 #include "media_player.hpp"
 #include "screen_manager.hpp"
+#include "ui_theme.hpp"
 
 #include <algorithm>
 
@@ -26,7 +27,7 @@ void FilePickerScreen::build() {
     lv_obj_set_size(footer, lv_pct(100), LV_SIZE_CONTENT);
     lv_obj_set_style_pad_all(footer, kPadding, 0);
     lv_obj_set_style_pad_column(footer, kPadding, 0);
-    lv_obj_set_style_border_color(footer, lv_color_hex(0xc0c0c0), 0);
+    lv_obj_set_style_border_color(footer, ui_theme::color(ui_theme::colors().border), 0);
     lv_obj_set_style_border_width(footer, 1, 0);
     lv_obj_set_style_border_side(footer, LV_BORDER_SIDE_TOP, 0);
 

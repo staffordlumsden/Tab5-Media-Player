@@ -4,22 +4,24 @@
  */
 
 #include "grouped_list.hpp"
+#include "ui_theme.hpp"
 #include "widgets.hpp"
 
 namespace {
 
 constexpr int32_t kRowHeight = 88;
 constexpr int32_t kPadding = 24;
-constexpr uint32_t kSelectedColor = 0x2196f3;
 
 bool style_initialized = false;
+bool style_dark = true;
 lv_style_t section_style, row_style, row_pressed_style, row_checked_style;
 
 void style_init() {
-    if (style_initialized) return;
+    const auto &colors = ui_theme::colors();
+    if (style_initialized && style_dark == ui_theme::dark_mode()) return;
 
     lv_style_init(&section_style);
-    lv_style_set_bg_color(&section_style, lv_color_white());
+    lv_style_set_bg_color(&section_style, ui_theme::color(colors.surface));
     lv_style_set_bg_opa(&section_style, LV_OPA_COVER);
     lv_style_set_radius(&section_style, 16);
     lv_style_set_clip_corner(&section_style, true);
@@ -37,17 +39,19 @@ void style_init() {
     lv_style_set_flex_cross_place(&row_style, LV_FLEX_ALIGN_CENTER);
     lv_style_set_flex_track_place(&row_style, LV_FLEX_ALIGN_CENTER);
     lv_style_set_text_font(&row_style, lv_widgets_resolved_font(LV_WIDGETS_FONT_BODY));
+    lv_style_set_text_color(&row_style, ui_theme::color(colors.text));
 
     lv_style_init(&row_pressed_style);
     lv_style_set_bg_color(&row_pressed_style, lv_color_black());
     lv_style_set_bg_opa(&row_pressed_style, 35);
 
     lv_style_init(&row_checked_style);
-    lv_style_set_bg_color(&row_checked_style, lv_color_hex(kSelectedColor));
+    lv_style_set_bg_color(&row_checked_style, ui_theme::color(colors.accent));
     lv_style_set_bg_opa(&row_checked_style, LV_OPA_COVER);
     lv_style_set_text_color(&row_checked_style, lv_color_white());
 
     style_initialized = true;
+    style_dark = ui_theme::dark_mode();
 }
 
 }
@@ -59,7 +63,7 @@ lv_obj_t *lv_grouped_section_create(lv_obj_t *parent, const char *title) {
         if (lv_obj_get_child_count(parent) > 1) lv_obj_set_style_pad_top(label, kPadding / 2, 0);
         lv_label_set_text(label, title);
         lv_obj_set_font_role(label, LV_WIDGETS_FONT_BODY);
-        lv_obj_set_style_text_color(label, lv_color_hex(0x808080), 0);
+        lv_obj_set_style_text_color(label, ui_theme::color(ui_theme::colors().muted), 0);
         lv_obj_set_style_pad_hor(label, kPadding, 0);
     }
     auto section = lv_container_create(parent);
@@ -98,7 +102,7 @@ lv_obj_t *lv_grouped_row_create(lv_obj_t *section, const char *icon, const char 
     auto arrow = lv_label_create(row);
     lv_obj_set_width(arrow, 48);
     lv_obj_set_style_text_align(arrow, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_style_text_color(arrow, lv_color_hex(0x808080), 0);
+    lv_obj_set_style_text_color(arrow, ui_theme::color(ui_theme::colors().muted), 0);
     lv_label_set_text(arrow, LV_SYMBOL_RIGHT);
     return row;
 }

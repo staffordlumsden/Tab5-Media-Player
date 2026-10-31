@@ -28,6 +28,7 @@
 #include "settings.hpp"
 #include "ui_font.hpp"
 #include "ui_orientation.hpp"
+#include "ui_theme.hpp"
 #include "usb_host.hpp"
 #include "usb_host_msc.hpp"
 #include "usb_host_uac.hpp"
@@ -147,6 +148,7 @@ void app_entry() {
         return;
     }
     ui_font_init();
+    ui_theme::init(settings_dark_mode());
 #ifdef ESP_PLATFORM
     ESP_LOGI(TAG, "internal heap free after display init: %u",
              (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL));

@@ -7,7 +7,7 @@ file(GLOB_RECURSE APP_SRCS ${APP_GLOB_FLAGS}
      "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
      "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 
-set(APP_REQUIRES bsp ui_framework harness image_framework media_framework vdec_common h264_dec mpeg2_dec usb_host airplay jpeg_decode_enhanced esp_timer wifi)
+set(APP_REQUIRES bsp ui_framework ui_theme harness image_framework media_framework vdec_common h264_dec mpeg2_dec usb_host airplay jpeg_decode_enhanced esp_timer wifi)
 if(ESP_PLATFORM)
     list(APPEND APP_REQUIRES esp_mm esp_driver_jpeg esp_driver_ppa esp_driver_dma hal nvs_flash)
 endif()
@@ -19,7 +19,10 @@ idf_component_register(
 
 file(GLOB APP_RESOURCES ${APP_GLOB_FLAGS} "${CMAKE_CURRENT_SOURCE_DIR}/resources/resources.json")
 if(APP_RESOURCES AND NOT CMAKE_SCRIPT_MODE_FILE)
-    resgen_add_resources(TARGET ${COMPONENT_LIB} DEFINITION ${APP_RESOURCES} PARTITION resources)
+    # Console launches this from its 5 MiB SD application slot and does not
+    # expose the stock upstream `resources` partition. Embed the generated
+    # assets in the application image so the package is self-contained.
+    resgen_add_resources(TARGET ${COMPONENT_LIB} DEFINITION ${APP_RESOURCES})
 endif()
 
 if(ESP_PLATFORM AND H264_BENCH_CLIP)

@@ -12,14 +12,11 @@
 #include "resources.h"
 #include "settings.hpp"
 #include "settings_widgets.hpp"
+#include "ui_theme.hpp"
 #include "widgets.hpp"
 
 static constexpr int32_t kListRowHeight = 88;
 static constexpr int32_t kPadding = 24;
-static constexpr uint32_t kMutedColor = 0x808080;
-static constexpr uint32_t kConnectedColor = 0x2196f3;
-static constexpr uint32_t kOnlineColor = 0x2e7d32;
-
 static const char *signal_icon(int8_t rssi) {
     if (rssi >= -55) return TABLER_WIFI;
     if (rssi >= -67) return TABLER_WIFI_2;
@@ -52,7 +49,7 @@ static lv_obj_t *list_message_create(lv_obj_t *list, const char *text) {
     lv_obj_set_style_pad_column(row, kPadding, 0);
     auto label = lv_label_create(row);
     lv_obj_set_font_role(label, LV_WIDGETS_FONT_BODY);
-    lv_obj_set_style_text_color(label, lv_color_hex(kMutedColor), 0);
+    lv_obj_set_style_text_color(label, ui_theme::color(ui_theme::colors().muted), 0);
     lv_label_set_text(label, text);
     return row;
 }
@@ -175,14 +172,14 @@ void WifiPage::update_status() {
     lv_obj_set_state(switch_, LV_STATE_DISABLED, busy_);
 
     const wifi::Status status = wifi::manager().status();
-    uint32_t color = kMutedColor;
+    uint32_t color = ui_theme::colors().muted;
     switch (status.state) {
     case wifi::State::Off:
         lv_label_set_text(status_, settings_wifi_enabled() ? "Turning on Wi-Fi..." : "Wi-Fi off");
         break;
     case wifi::State::Connected:
         lv_label_set_text_fmt(status_, "Connected to %s", status.ssid.c_str());
-        color = kOnlineColor;
+        color = ui_theme::colors().accent_alt;
         break;
     case wifi::State::Connecting:
         lv_label_set_text_fmt(status_, "Connecting to %s...", status.ssid.c_str());
@@ -241,8 +238,10 @@ void WifiPage::rebuild_list() {
         const bool secured = network->secured;
         auto row = lv_grouped_row_create(list_, signal_icon(network->rssi), ssid.c_str(), &icon_36);
         if (ssid == connected) {
-            lv_obj_set_style_text_color(lv_obj_get_child(row, 0), lv_color_hex(kConnectedColor), 0);
-            lv_obj_set_style_text_color(lv_obj_get_child(row, 1), lv_color_hex(kConnectedColor), 0);
+            lv_obj_set_style_text_color(lv_obj_get_child(row, 0),
+                                        ui_theme::color(ui_theme::colors().accent), 0);
+            lv_obj_set_style_text_color(lv_obj_get_child(row, 1),
+                                        ui_theme::color(ui_theme::colors().accent), 0);
         }
         auto trailing = lv_obj_get_child(row, 2);
         if (secured) {

@@ -14,6 +14,7 @@
 #include "screens/file_picker_screen.hpp"
 #include "screens/image_viewer_screen.hpp"
 #include "screens/video_player_screen.hpp"
+#include "ui_theme.hpp"
 #include "esp_log.h"
 
 #include <algorithm>
@@ -161,7 +162,7 @@ void FileBrowserPage::build_toolbar() {
     lv_obj_set_size(toolbar_, lv_pct(100), LV_SIZE_CONTENT);
     lv_obj_set_style_pad_all(toolbar_, kToolbarPadding, 0);
     lv_obj_set_style_pad_column(toolbar_, kToolbarPadding, 0);
-    lv_obj_set_style_border_color(toolbar_, lv_color_hex(0xc0c0c0), 0);
+    lv_obj_set_style_border_color(toolbar_, ui_theme::color(ui_theme::colors().border), 0);
     lv_obj_set_style_border_width(toolbar_, 1, 0);
     lv_obj_set_style_border_side(toolbar_, LV_BORDER_SIDE_TOP, 0);
 
@@ -226,7 +227,7 @@ void FileBrowserPage::open_rename() {
     lv_obj_set_font_role(textarea, LV_WIDGETS_FONT_BODY);
 
     rename_error_ = lv_modal_message_create(rename_modal_, "");
-    lv_obj_set_style_text_color(rename_error_, lv_color_hex(0xd32f2f), 0);
+    lv_obj_set_style_text_color(rename_error_, ui_theme::color(ui_theme::colors().danger), 0);
     lv_obj_set_hidden(rename_error_, true);
 
     auto buttons = lv_container_create(rename_modal_, LV_FLEX_FLOW_ROW);
@@ -346,9 +347,9 @@ void FileBrowserPage::open_progress(const char *title, const char *failure) {
     lv_obj_set_size(progress_bar_, LV_PCT(100), 12);
     lv_obj_set_style_radius(progress_bar_, 6, 0);
     lv_obj_set_style_radius(progress_bar_, 6, LV_PART_INDICATOR);
-    lv_obj_set_style_bg_color(progress_bar_, lv_color_hex(0xe0e0e0), 0);
+    lv_obj_set_style_bg_color(progress_bar_, ui_theme::color(ui_theme::colors().surface_pressed), 0);
     lv_obj_set_style_bg_opa(progress_bar_, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(progress_bar_, lv_color_hex(0x2196f3), LV_PART_INDICATOR);
+    lv_obj_set_style_bg_color(progress_bar_, ui_theme::color(ui_theme::colors().accent), LV_PART_INDICATOR);
     lv_obj_set_style_bg_opa(progress_bar_, LV_OPA_COVER, LV_PART_INDICATOR);
 
     lv_modal_button_create(progress_modal_, "Cancel", LV_MODAL_BUTTON_TYPE_SECONDARY,
@@ -546,7 +547,8 @@ void FileBrowserPage::did_change_selection() {
 void FileBrowserPage::build(lv_obj_t *contents) {
     contents_ = contents;
     toolbar_ = nullptr;
-    lv_obj_set_style_bg_color(contents, lv_color_white(), 0);
+    lv_obj_set_style_bg_color(contents, ui_theme::color(ui_theme::colors().surface), 0);
+    lv_obj_set_style_text_color(contents, ui_theme::color(ui_theme::colors().text), 0);
     lv_obj_set_style_bg_opa(contents, LV_OPA_COVER, 0);
     browser_.build(contents);
     if (browser_.selecting()) build_toolbar();

@@ -166,7 +166,7 @@ void AirPlayReceiverScreen::showArtworkIcon(const char *icon) {
     if (!artwork_icon_) {
         artwork_icon_ = lv_label_create(artwork_);
         lv_obj_set_style_text_font(artwork_icon_, &icon_120, 0);
-        lv_obj_set_style_text_color(artwork_icon_, lv_color_hex(kPlayerArtworkIconColor), 0);
+        lv_obj_set_style_text_color(artwork_icon_, ui_theme::color(player_artwork_icon_color()), 0);
         shown_icon_ = nullptr;
     }
     if (icon != shown_icon_) {
@@ -240,7 +240,7 @@ void AirPlayReceiverScreen::buildSeekRow(lv_obj_t *controls) {
 }
 
 void AirPlayReceiverScreen::buildTransport(lv_obj_t *controls) {
-    const lv_color_t foreground = lv_color_hex(kPlayerForegroundColor);
+    const lv_color_t foreground = ui_theme::color(player_foreground_color());
     const PlayerRow row = player_row_build(controls);
 
     prev_button_ =
@@ -260,14 +260,15 @@ void AirPlayReceiverScreen::buildTransport(lv_obj_t *controls) {
 }
 
 void AirPlayReceiverScreen::buildVolumeRow(lv_obj_t *controls) {
-    const lv_color_t foreground = lv_color_hex(kPlayerForegroundColor);
+    const lv_color_t foreground = ui_theme::color(player_foreground_color());
     const PlayerRow row = player_row_build(controls);
     lv_obj_t *icon = media_icon_button(row.left, kPlayerIconButton, &icon_36, TABLER_VOLUME,
                                        foreground, &volume_label_);
     lv_obj_set_clickable(icon, false);
 
     volume_slider_ =
-        media_slider(row.middle, kVolumeRange, foreground, lv_color_hex(kPlayerTrackColor));
+        media_slider(row.middle, kVolumeRange, foreground,
+                     ui_theme::color(player_track_color()));
     lv_obj_set_flex_grow(volume_slider_, 1);
     lv_obj_set_clickable(volume_slider_, false);
     lv_obj_set_style_opa(volume_slider_, LV_OPA_TRANSP, LV_PART_KNOB);

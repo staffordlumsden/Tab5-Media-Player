@@ -9,6 +9,7 @@
 #include "media_player.hpp"
 #include "resources.h"
 #include "screens/image_object.hpp"
+#include "ui_theme.hpp"
 #include "usb_host_msc.hpp"
 
 #include <algorithm>
@@ -20,7 +21,6 @@ static constexpr int32_t kThumbSide = 56;
 static constexpr ImageSize kThumbBox = { kThumbSide, kThumbSide };
 static constexpr int32_t kListRowHeight = 132;
 static constexpr ImageSize kListThumbBox = { 192, 108 };
-static constexpr uint32_t kListThumbColor = 0xeeeeee;
 static constexpr ImageSize kGridThumbBox = { 200, 150 };
 static constexpr int32_t kGridMinGap = 12;
 static constexpr int32_t kGridNameGap = 8;
@@ -28,7 +28,6 @@ static constexpr int32_t kGridRowGap = 24;
 static constexpr int32_t kGridHighlightPad = 8;
 static constexpr std::size_t kLookahead = 2;
 static constexpr std::size_t kPrefetchLimit = 24;
-static constexpr uint32_t kSelectedColor = 0xd6eafd;
 static constexpr lv_opa_t kEnabledOpa = LV_OPA_COVER;
 static constexpr lv_opa_t kDisabledOpa = LV_OPA_40;
 
@@ -166,7 +165,7 @@ void FileBrowser::build_view() {
         lv_obj_move_to_index(body_, 0);
         lv_label_set_text(body_, current.opened ? "No files" : "Cannot open directory");
         lv_obj_set_font_role(body_, LV_WIDGETS_FONT_BODY);
-        lv_obj_set_style_text_color(body_, lv_color_hex(0x808080), 0);
+        lv_obj_set_style_text_color(body_, ui_theme::color(ui_theme::colors().muted), 0);
         return;
     }
     lv_obj_set_flex_align(contents_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
@@ -502,7 +501,7 @@ lv_obj_t *FileBrowser::createRow(lv_obj_t *parent) {
 
     lv_obj_t *frame = row;
     if (list) {
-        frame = lv_container_create(row, lv_color_hex(kListThumbColor));
+        frame = lv_container_create(row, ui_theme::color(ui_theme::colors().surface_pressed));
         lv_obj_set_size(frame, kListThumbBox.width, kListThumbBox.height);
         lv_obj_set_style_radius(frame, 6, 0);
         lv_obj_set_style_clip_corner(frame, true, 0);
@@ -531,11 +530,11 @@ lv_obj_t *FileBrowser::createRow(lv_obj_t *parent) {
     lv_obj_set_style_text_align(arrow, LV_TEXT_ALIGN_CENTER, 0);
     lv_label_set_text(arrow, LV_SYMBOL_RIGHT);
     lv_obj_set_font_role(arrow, LV_WIDGETS_FONT_BODY);
-    lv_obj_set_style_text_color(arrow, lv_color_hex(0x808080), 0);
+    lv_obj_set_style_text_color(arrow, ui_theme::color(ui_theme::colors().muted), 0);
 
     lv_obj_set_style_pad_hor(row, 24, 0);
     lv_obj_set_style_border_width(row, 0, 0);
-    lv_obj_set_style_bg_color(row, lv_color_hex(kSelectedColor), LV_STATE_CHECKED);
+    lv_obj_set_style_bg_color(row, ui_theme::color(ui_theme::colors().selected), LV_STATE_CHECKED);
     lv_obj_set_style_bg_opa(row, LV_OPA_COVER, LV_STATE_CHECKED);
     lv_obj_t *separator = lv_hor_separator_create(row);
     lv_obj_set_ignore_layout(separator, true);
@@ -618,12 +617,12 @@ lv_obj_t *FileBrowser::createCell(lv_obj_t *parent) {
     lv_obj_set_flex_align(body, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_row(body, kGridNameGap, 0);
     lv_obj_set_style_radius(body, 6 + kGridHighlightPad, 0);
-    lv_obj_set_style_bg_color(body, lv_color_black(), LV_STATE_PRESSED);
+    lv_obj_set_style_bg_color(body, ui_theme::color(ui_theme::colors().text), LV_STATE_PRESSED);
     lv_obj_set_style_bg_opa(body, 35, LV_STATE_PRESSED);
-    lv_obj_set_style_bg_color(body, lv_color_hex(kSelectedColor), LV_STATE_CHECKED);
+    lv_obj_set_style_bg_color(body, ui_theme::color(ui_theme::colors().selected), LV_STATE_CHECKED);
     lv_obj_set_style_bg_opa(body, LV_OPA_COVER, LV_STATE_CHECKED);
 
-    lv_obj_t *frame = lv_container_create(body, lv_color_hex(kListThumbColor));
+    lv_obj_t *frame = lv_container_create(body, ui_theme::color(ui_theme::colors().surface_pressed));
     lv_obj_set_size(frame, kGridThumbBox.width, kGridThumbBox.height);
     lv_obj_set_style_radius(frame, 6, 0);
     lv_obj_set_style_clip_corner(frame, true, 0);

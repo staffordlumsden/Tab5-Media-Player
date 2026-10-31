@@ -6,6 +6,7 @@
 #include "display_page.hpp"
 #include "settings.hpp"
 #include "settings_widgets.hpp"
+#include "ui_theme.hpp"
 #include "widgets.hpp"
 
 static void color_mode_failed(lv_obj_t *obj, esp_err_t err) {
@@ -54,6 +55,17 @@ void DisplayPage::build(lv_obj_t *contents) {
                                             format == BSP_PIXEL_FORMAT_RGB888 ? 0 : 1);
             color_mode_failed(segmented, err);
         });
+    });
+
+    lv_hor_separator_create(section);
+
+    row = lv_setting_row_create(section, "Appearance");
+    lv_setting_segmented_create(row, {"Light", "Dark"}, ui_theme::dark_mode() ? 1 : 0,
+                                [](lv_obj_t *segmented, int index) {
+        lv_setting_segmented_set_active(segmented, index);
+        settings_set_dark_mode(index == 1);
+        settings_commit();
+        ui_theme::set_dark_mode(index == 1);
     });
 
     lv_hor_separator_create(section);

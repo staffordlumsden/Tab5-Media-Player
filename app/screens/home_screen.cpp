@@ -17,6 +17,7 @@
 #include "screens/home/grouped_list.hpp"
 #include "screens/home/sound_page.hpp"
 #include "screens/home/wifi_page.hpp"
+#include "ui_theme.hpp"
 #include "widgets.hpp"
 
 static constexpr int32_t kMenuWidth = 400;
@@ -44,20 +45,42 @@ static lv_obj_t *pane_create(lv_obj_t *parent, lv_color_t bg_color) {
 }
 
 void HomeScreen::build() {
+    std::weak_ptr<HomeScreen> weak = std::static_pointer_cast<HomeScreen>(shared_from_this());
+    ui_theme::set_change_listener([weak] {
+        if (auto home = weak.lock()) home->theme_changed();
+    });
     lv_obj_set_scrollable(root_, false);
     lv_obj_set_flex_flow(root_, LV_FLEX_FLOW_ROW);
     lv_obj_set_style_pad_all(root_, 0, 0);
     lv_obj_set_style_pad_column(root_, 0, 0);
-    menu_pane_ = pane_create(root_, lv_color_hex(0xeeeeee));
+    lv_obj_set_style_bg_color(root_, ui_theme::color(ui_theme::colors().bg), 0);
+    lv_obj_set_style_text_color(root_, ui_theme::color(ui_theme::colors().text), 0);
+    menu_pane_ = pane_create(root_, ui_theme::color(ui_theme::colors().surface));
     build_menu();
     separator_ = lv_ver_separator_create(root_);
-    page_pane_ = pane_create(root_, lv_color_white());
+    page_pane_ = pane_create(root_, ui_theme::color(ui_theme::colors().bg));
     lv_obj_set_width(page_pane_, LV_SIZE_CONTENT);
     lv_obj_set_flex_grow(page_pane_, 1);
     lv_obj_add_event_fn(root_, LV_EVENT_SIZE_CHANGED, [this](lv_event_t *) {
         if (is_landscape() != landscape_) navigate([] {});
     });
     layout();
+}
+
+lv_theme_t *HomeScreen::theme() {
+    return ui_theme::current_lvgl_theme();
+}
+
+void HomeScreen::theme_changed() {
+    lv_async_call([weak = std::weak_ptr<HomeScreen>(
+                       std::static_pointer_cast<HomeScreen>(shared_from_this()))] {
+        auto self = weak.lock();
+        if (!self) return;
+        lv_obj_set_style_bg_color(self->menu_pane_, ui_theme::color(ui_theme::colors().surface), 0);
+        lv_obj_set_style_bg_color(self->root_, ui_theme::color(ui_theme::colors().bg), 0);
+        self->refresh_menu();
+        self->navigate([] {});
+    });
 }
 
 void HomeScreen::push(std::shared_ptr<HomePage> page) {
@@ -170,7 +193,7 @@ void HomeScreen::layout() {
 
 void HomeScreen::build_menu() {
     auto navigation = lv_navigation_create(menu_pane_);
-    lv_navigation_title_create(navigation, "Media Player");
+    lv_navigation_title_create(navigation, "fMP3 Player");
 
     menu_contents_ = lv_spacer_create(menu_pane_, LV_PCT(100), LV_SIZE_CONTENT, 1);
     lv_obj_set_flex_flow(menu_contents_, LV_FLEX_FLOW_COLUMN);
@@ -189,10 +212,10 @@ void HomeScreen::update_menu_rows() {
 void HomeScreen::build_page() {
     navigation_ = nullptr;
     if (stack_.empty()) {
-        lv_obj_set_style_bg_color(page_pane_, lv_color_hex(0xeeeeee), 0);
+        lv_obj_set_style_bg_color(page_pane_, ui_theme::color(ui_theme::colors().bg), 0);
         return;
     }
-    lv_obj_set_style_bg_color(page_pane_, lv_color_white(), 0);
+    lv_obj_set_style_bg_color(page_pane_, ui_theme::color(ui_theme::colors().surface), 0);
 
     HomePage *page = stack_.back().get();
     build_navigation(page);

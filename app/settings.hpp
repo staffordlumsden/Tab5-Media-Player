@@ -26,6 +26,9 @@ void settings_init();
 void settings_apply();
 void settings_commit();
 
+bool settings_dark_mode();
+void settings_set_dark_mode(bool dark);
+
 int settings_display_brightness();
 void settings_set_display_brightness(int percent);
 

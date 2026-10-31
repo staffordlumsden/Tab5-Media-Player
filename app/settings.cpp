@@ -212,6 +212,8 @@ Setting<"browserlayout", uint8_t, +[](int layout) -> uint8_t {
     return layout >= 0 && layout < kBrowserLayouts ? layout : 0;
 }> s_browser_layout{(uint8_t)BrowserLayout::Compact};
 
+Setting<"darkmode", uint8_t, sanitize_flag> s_dark_mode{1};
+
 template <typename Fn>
 void for_each_setting(Fn &&fn) {
     fn(s_display_brightness);
@@ -239,6 +241,7 @@ void for_each_setting(Fn &&fn) {
     fn(s_video_input_interval);
     fn(s_video_input_stretch);
     fn(s_browser_layout);
+    fn(s_dark_mode);
 }
 
 }  // namespace
@@ -264,6 +267,14 @@ void settings_commit() {
     bool written = false;
     for_each_setting([&written](auto &setting) { written |= setting.commit(s_nvs); });
     if (written) nvs_commit(s_nvs);
+}
+
+bool settings_dark_mode() {
+    return s_dark_mode.get() != 0;
+}
+
+void settings_set_dark_mode(bool dark) {
+    s_dark_mode.set(dark);
 }
 
 int settings_display_brightness() {

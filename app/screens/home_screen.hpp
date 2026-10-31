@@ -17,6 +17,7 @@
 class HomeScreen : public Screen {
 public:
     void build() override;
+    lv_theme_t *theme() override;
     void onAppear() override;
     void onDisappear() override;
     void push(std::shared_ptr<HomePage> page);
@@ -67,4 +68,5 @@ private:
     std::shared_ptr<HomePage> open_sound();
     std::shared_ptr<HomePage> open_wifi();
     void show_mount_error(const char *title, const char *message, esp_err_t err);
+    void theme_changed();
 };

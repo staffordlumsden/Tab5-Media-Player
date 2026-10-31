@@ -1,4 +1,25 @@
-# Tab5-Media-Player
+# fMP3 Player for M5Stack Tab5
+
+This is Stafford Lumsden's **fMP3 Player** fork of
+[`Hiroki-Kawakami/Tab5-Media-Player`](https://github.com/Hiroki-Kawakami/Tab5-Media-Player).
+It keeps the upstream video, audio and image engine while applying the Great
+Bespoke Tab5 Console interface language:
+
+- CYD PixelFonts for navigation, labels, controls and app chrome, with the
+  existing Noto Japanese subset retained as a fallback for media metadata.
+- Console dark and light palettes, persisted in NVS and selectable from
+  **Settings → Display → Appearance**.
+- Console blue (`0x3b82f6`), green (`0x22c55e`), amber and red accents.
+- An SD-installable `Tab5fMP3Player` application image that carries its fonts
+  and icons inside the application, so it runs from the resident Console's
+  5 MiB OTA slot without an upstream `resources` partition.
+
+Build and SD installation details are in
+[`docs/fmp3-console-skin.md`](docs/fmp3-console-skin.md).
+
+The original upstream project documentation follows.
+
+---
 
 Open Video, Audio and Image files on M5Stack Tab5 (ESP32-P4).
 

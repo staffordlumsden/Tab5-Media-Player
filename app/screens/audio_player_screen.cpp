@@ -36,9 +36,6 @@ static constexpr ImageSize kArtworkBox = { kPlayerArtworkSide, kPlayerArtworkSid
 /* LVGL draws through framebuffer 0 only. */
 static constexpr int kArtworkFramebuffer = 1;
 
-static constexpr uint32_t kMessageColor = 0xc25e00;
-static constexpr uint32_t kCurrentThumbColor = 0xcccccc;
-
 static constexpr const char *kTitle = "Music Player";
 
 static int32_t body_line_height() {
@@ -214,7 +211,7 @@ void AudioPlayerScreen::buildPlaylist() {
 
     playlist_count_ = lv_label_create(header);
     lv_obj_set_font_role(playlist_count_, LV_WIDGETS_FONT_BODY);
-    lv_obj_set_style_text_color(playlist_count_, lv_color_hex(kPlayerSubtitleColor), 0);
+    lv_obj_set_style_text_color(playlist_count_, ui_theme::color(player_subtitle_color()), 0);
     updatePlaylistCount();
 
     lv_hor_separator_create(pane_view_);
@@ -328,7 +325,7 @@ void AudioPlayerScreen::resetArtwork() {
     artwork_icon_ = lv_label_create(artwork_);
     lv_label_set_text(artwork_icon_, TABLER_MUSIC);
     lv_obj_set_style_text_font(artwork_icon_, &icon_120, 0);
-    lv_obj_set_style_text_color(artwork_icon_, lv_color_hex(kPlayerArtworkIconColor), 0);
+    lv_obj_set_style_text_color(artwork_icon_, ui_theme::color(player_artwork_icon_color()), 0);
     lv_obj_center(artwork_icon_);
 }
 
@@ -416,11 +413,12 @@ void AudioPlayerScreen::buildSeekRow(lv_obj_t *controls) {
 }
 
 void AudioPlayerScreen::buildTransport(lv_obj_t *controls) {
-    const lv_color_t foreground = lv_color_hex(kPlayerForegroundColor);
+    const lv_color_t foreground = ui_theme::color(player_foreground_color());
     const PlayerRow row = player_row_build(controls);
 
     shuffle_button_ = media_toggle_button(row.left, kPlayerIconButton, &icon_36,
-                                          TABLER_ARROWS_SHUFFLE, foreground, lv_color_white());
+                                          TABLER_ARROWS_SHUFFLE, foreground,
+                                          ui_theme::color(ui_theme::colors().surface));
     lv_obj_add_event_fn(shuffle_button_, LV_EVENT_CLICKED, [this](lv_event_t *) {
         setShuffle(!playlist_->shuffled());
         settings_set_audio_shuffle(playlist_->shuffled());
@@ -453,7 +451,8 @@ void AudioPlayerScreen::buildTransport(lv_obj_t *controls) {
     lv_obj_add_event_fn(next_button_, LV_EVENT_CLICKED, [this](lv_event_t *) { advance(1, true); });
 
     repeat_button_ = media_toggle_button(row.right, kPlayerIconButton, &icon_36, TABLER_REPEAT,
-                                         foreground, lv_color_white(), &repeat_label_);
+                                         foreground, ui_theme::color(ui_theme::colors().surface),
+                                         &repeat_label_);
     lv_obj_add_event_fn(repeat_button_, LV_EVENT_CLICKED, [this](lv_event_t *) {
         switch (repeat_) {
         case RepeatMode::Off: setRepeatMode(RepeatMode::All); break;
@@ -467,11 +466,12 @@ void AudioPlayerScreen::buildTransport(lv_obj_t *controls) {
 }
 
 void AudioPlayerScreen::buildVolumeRow(lv_obj_t *controls) {
-    const lv_color_t foreground = lv_color_hex(kPlayerForegroundColor);
+    const lv_color_t foreground = ui_theme::color(player_foreground_color());
     const PlayerRow row = player_row_build(controls);
     lv_obj_t *mute = media_icon_button(row.left, kPlayerIconButton, &icon_36, TABLER_VOLUME,
                                        foreground, &volume_label_);
-    volume_slider_ = media_slider(row.middle, 100, foreground, lv_color_hex(kPlayerTrackColor));
+    volume_slider_ = media_slider(row.middle, 100, foreground,
+                                  ui_theme::color(player_track_color()));
     lv_obj_set_flex_grow(volume_slider_, 1);
     media_volume_bind(mute, volume_label_, volume_slider_);
 }
@@ -495,7 +495,7 @@ void AudioPlayerScreen::openCurrent() {
     if (subtitle_label_) {
         shown_subtitle_.clear();
         player_scrolling_text_set(subtitle_label_, "");
-        lv_obj_set_style_text_color(subtitle_label_, lv_color_hex(kPlayerSubtitleColor), 0);
+        lv_obj_set_style_text_color(subtitle_label_, ui_theme::color(player_subtitle_color()), 0);
     }
     syncPlaylist();
     updateTransport();
@@ -633,7 +633,8 @@ void AudioPlayerScreen::refresh() {
         shown_subtitle_ = message;
         player_scrolling_text_set(subtitle_label_, message);
         lv_obj_set_style_text_color(
-            subtitle_label_, lv_color_hex(failed ? kMessageColor : kPlayerSubtitleColor), 0);
+            subtitle_label_, ui_theme::color(failed ? ui_theme::colors().warning
+                                                    : player_subtitle_color()), 0);
     }
 }
 
@@ -652,10 +653,10 @@ lv_obj_t *AudioPlayerScreen::createRow(lv_obj_t *parent) {
     lv_obj_set_style_border_width(row, 0, 0);
     lv_obj_set_style_pad_hor(row, kPad, 0);
     lv_obj_set_style_pad_column(row, 16, 0);
-    lv_obj_set_style_bg_color(row, lv_color_hex(kPlayerArtworkColor), LV_STATE_CHECKED);
+    lv_obj_set_style_bg_color(row, ui_theme::color(ui_theme::colors().selected), LV_STATE_CHECKED);
     lv_obj_set_style_bg_opa(row, LV_OPA_COVER, LV_STATE_CHECKED);
 
-    lv_obj_t *frame = lv_container_create(row, lv_color_hex(kPlayerArtworkColor));
+    lv_obj_t *frame = lv_container_create(row, ui_theme::color(player_artwork_color()));
     lv_obj_set_size(frame, kThumbSide, kThumbSide);
     lv_obj_set_style_radius(frame, kThumbRadius, 0);
     lv_obj_set_style_clip_corner(frame, true, 0);
@@ -664,7 +665,7 @@ lv_obj_t *AudioPlayerScreen::createRow(lv_obj_t *parent) {
     lv_obj_t *icon = lv_label_create(frame);
     lv_label_set_text(icon, TABLER_MUSIC);
     lv_obj_set_style_text_font(icon, &icon_28, 0);
-    lv_obj_set_style_text_color(icon, lv_color_hex(kPlayerArtworkIconColor), 0);
+    lv_obj_set_style_text_color(icon, ui_theme::color(player_artwork_icon_color()), 0);
     lv_obj_center(icon);
 
     lv_obj_t *text = lv_container_create(row);
@@ -677,7 +678,7 @@ lv_obj_t *AudioPlayerScreen::createRow(lv_obj_t *parent) {
         lv_obj_set_size(label, lv_pct(100), body_line_height());
         lv_obj_set_font_role(label, LV_WIDGETS_FONT_BODY);
         lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_DOTS);
-        if (i) lv_obj_set_style_text_color(label, lv_color_hex(kPlayerSubtitleColor), 0);
+        if (i) lv_obj_set_style_text_color(label, ui_theme::color(player_subtitle_color()), 0);
     }
     return row;
 }
@@ -698,7 +699,8 @@ void AudioPlayerScreen::bindRow(lv_obj_t *row, std::size_t index) {
 
     lv_obj_t *frame = lv_obj_get_child(row, 0);
     lv_obj_set_style_bg_color(
-        frame, lv_color_hex(current ? kCurrentThumbColor : kPlayerArtworkColor), 0);
+        frame, ui_theme::color(current ? ui_theme::colors().surface_pressed
+                                       : player_artwork_color()), 0);
     std::shared_ptr<const ImagePixels> pixels = media_cache_thumbnail(item.path, kThumbBox);
     lv_obj_t *image = lv_obj_get_child_count(frame) > 1 ? lv_obj_get_child(frame, 1) : nullptr;
     if (image && lv_obj_get_user_data(image) != pixels.get()) {

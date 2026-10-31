@@ -8,16 +8,7 @@
 #include <functional>
 #include <initializer_list>
 #include "lvgl.h"
-
-/* A null SettingColors leaves the widget on the LVGL theme's light palette. */
-struct SettingColors {
-    uint32_t page_bg;
-    uint32_t section_bg;
-    uint32_t value;
-    uint32_t separator;
-    uint32_t track;
-    uint32_t accent;
-};
+#include "ui_theme.hpp"
 
 void lv_setting_page_style(lv_obj_t *contents, const SettingColors *colors = nullptr);
 lv_obj_t *lv_setting_section_create(lv_obj_t *contents, const char *title = nullptr,

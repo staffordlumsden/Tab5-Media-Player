@@ -22,8 +22,6 @@ static constexpr int32_t kSegmentGap = 16;
 static constexpr int32_t kSegmentInset = 14;
 static constexpr int32_t kDividerHeight = 28;
 static constexpr int32_t kArtworkRadius = 24;
-static constexpr uint32_t kSegmentIconColor = 0x707070;
-static constexpr uint32_t kPaneColor = 0xeeeeee;
 static constexpr int32_t kMarqueePauseMs = 2000;
 
 static constexpr lv_anim_t marquee_template() {
@@ -49,7 +47,7 @@ static lv_obj_t *build_navigation(lv_obj_t *parent, const char *title,
 static lv_obj_t *build_segment(lv_obj_t *parent, int32_t width,
                                std::initializer_list<const char *> icons,
                                std::function<void(int)> on_pane) {
-    const lv_color_t foreground = lv_color_hex(kPlayerForegroundColor);
+    const lv_color_t foreground = ui_theme::color(player_foreground_color());
     const int count = (int)icons.size();
     const int32_t cell = width / count;
     const int32_t left = (width - cell * count) / 2;
@@ -60,16 +58,16 @@ static lv_obj_t *build_segment(lv_obj_t *parent, int32_t width,
     int index = 0;
     for (const char *icon : icons) {
         lv_obj_t *button = media_toggle_button(segment, kSegmentHeight, &icon_28, icon, foreground,
-                                               lv_color_white());
+                                               ui_theme::color(ui_theme::colors().surface));
         lv_obj_set_size(button, cell, kSegmentHeight);
         lv_obj_set_pos(button, left + index * cell, 0);
-        lv_obj_set_style_text_color(button, lv_color_hex(kSegmentIconColor), 0);
+        lv_obj_set_style_text_color(button, ui_theme::color(ui_theme::colors().muted), 0);
         lv_obj_add_event_fn(button, LV_EVENT_CLICKED,
                             [on_pane, index](lv_event_t *) { on_pane(index); });
         index++;
     }
     for (int i = 1; i < count; i++) {
-        lv_obj_t *divider = lv_container_create(segment, lv_color_hex(kPlayerTrackColor));
+        lv_obj_t *divider = lv_container_create(segment, ui_theme::color(player_track_color()));
         lv_obj_set_size(divider, 1, kDividerHeight);
         lv_obj_set_pos(divider, left + i * cell, (kSegmentHeight - kDividerHeight) / 2);
     }
@@ -113,7 +111,7 @@ static lv_obj_t *build_controls(lv_obj_t *area, int32_t title_bottom_pad, Player
     lv_obj_set_style_pad_bottom(box, title_bottom_pad, 0);
     layout->title = build_scrolling_label(box, LV_WIDGETS_FONT_TITLE);
     layout->subtitle = build_scrolling_label(box, LV_WIDGETS_FONT_BODY);
-    lv_obj_set_style_text_color(layout->subtitle, lv_color_hex(kPlayerSubtitleColor), 0);
+    lv_obj_set_style_text_color(layout->subtitle, ui_theme::color(player_subtitle_color()), 0);
     return controls;
 }
 
@@ -122,8 +120,8 @@ PlayerLayout player_layout_build(lv_obj_t *root, const char *title, std::functio
                                  std::function<void(int)> on_pane) {
     PlayerLayout layout = {};
     lv_obj_clean(root);
-    lv_obj_set_style_bg_color(root, lv_color_white(), 0);
-    lv_obj_set_style_text_color(root, lv_color_hex(kPlayerForegroundColor), 0);
+    lv_obj_set_style_bg_color(root, ui_theme::color(ui_theme::colors().surface), 0);
+    lv_obj_set_style_text_color(root, ui_theme::color(player_foreground_color()), 0);
     lv_obj_set_style_pad_all(root, 0, 0);
     lv_obj_set_style_pad_row(root, 0, 0);
     lv_obj_set_style_pad_column(root, 0, 0);
@@ -194,7 +192,7 @@ void player_scrolling_text_set(lv_obj_t *label, const std::string &text) {
 }
 
 lv_obj_t *player_artwork_create(lv_obj_t *pane) {
-    lv_obj_t *artwork = lv_container_create(pane, lv_color_hex(kPlayerArtworkColor));
+    lv_obj_t *artwork = lv_container_create(pane, ui_theme::color(player_artwork_color()));
     lv_obj_set_size(artwork, kPlayerArtworkSide, kPlayerArtworkSide);
     lv_obj_set_style_radius(artwork, kArtworkRadius, 0);
     lv_obj_set_style_clip_corner(artwork, true, 0);
@@ -204,7 +202,7 @@ lv_obj_t *player_artwork_create(lv_obj_t *pane) {
 }
 
 lv_obj_t *player_pane_view_create(lv_obj_t *pane) {
-    lv_obj_t *view = lv_container_create(pane, lv_color_hex(kPaneColor));
+    lv_obj_t *view = lv_container_create(pane, ui_theme::color(ui_theme::colors().bg));
     lv_obj_set_size(view, lv_pct(100), lv_pct(100));
     lv_obj_set_style_radius(view, kArtworkRadius, 0);
     lv_obj_set_style_clip_corner(view, true, 0);
@@ -250,8 +248,8 @@ PlayerSeekRow player_seek_row_build(lv_obj_t *controls, int32_t range) {
     const PlayerRow row = player_row_build(controls, kSeekRowHeight);
     PlayerSeekRow seek;
     seek.elapsed = time_label(row.left);
-    seek.slider = media_slider(row.middle, range, lv_color_hex(kPlayerForegroundColor),
-                               lv_color_hex(kPlayerTrackColor));
+    seek.slider = media_slider(row.middle, range, ui_theme::color(player_foreground_color()),
+                               ui_theme::color(player_track_color()));
     lv_obj_set_flex_grow(seek.slider, 1);
     seek.total = time_label(row.right);
     return seek;
