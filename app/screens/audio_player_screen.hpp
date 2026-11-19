@@ -25,6 +25,7 @@ public:
 
 private:
     enum class Pane : uint8_t { Artwork, Playlist, Info, Settings };
+    enum class LockState : uint8_t { Unlocked, Locked, ScreenOff };
 
     const std::string &name() const { return playlist_->current().name; }
     const std::string &path() const { return playlist_->current().path; }
@@ -46,6 +47,17 @@ private:
     void relayout();
     void applyArtwork();
     void resetArtwork();
+    void lockPlayback();
+    void unlockPlayback();
+    void buildLockOverlay();
+    void buildWakeShield();
+    void enterScreenOff();
+    void wakeFromScreenOff();
+    void finishTouchWake();
+    void configureLockKeyboard(bool screen_off);
+    void applyLockArtwork();
+    void resetLockArtwork();
+    void updateLockText();
     void requestMeta();
     void prefetchNeighbours();
     std::string currentTitle() const;
@@ -77,6 +89,7 @@ private:
     bool landscape_ = false;
     RepeatMode repeat_ = RepeatMode::Off;
     Pane pane_ = Pane::Artwork;
+    LockState lock_state_ = LockState::Unlocked;
 
     std::shared_ptr<const MediaEntry> meta_;
     ImageSize cover_size_;
@@ -100,6 +113,15 @@ private:
     lv_obj_t *artwork_ = nullptr;
     lv_obj_t *artwork_icon_ = nullptr;
     lv_obj_t *artwork_image_ = nullptr;
+    lv_obj_t *lock_overlay_ = nullptr;
+    lv_obj_t *lock_artwork_ = nullptr;
+    lv_obj_t *lock_artwork_icon_ = nullptr;
+    lv_obj_t *lock_artwork_image_ = nullptr;
+    lv_obj_t *lock_title_ = nullptr;
+    lv_obj_t *lock_subtitle_ = nullptr;
+    lv_obj_t *lock_unlock_button_ = nullptr;
+    lv_obj_t *lock_screen_off_button_ = nullptr;
+    lv_obj_t *lock_wake_shield_ = nullptr;
     lv_obj_t *title_label_ = nullptr;
     lv_obj_t *repeat_button_ = nullptr;
     lv_obj_t *repeat_label_ = nullptr;

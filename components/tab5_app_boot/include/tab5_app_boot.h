@@ -2,7 +2,11 @@
 #pragma once
 #include <stdbool.h>
 #include "esp_err.h"
+#ifdef ESP_PLATFORM
 #include "esp_partition.h"
+#else
+typedef struct esp_partition_t esp_partition_t;
+#endif
 
 #ifdef __cplusplus
 extern "C" {

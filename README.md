@@ -19,11 +19,36 @@ Build and SD installation details are in
 
 **Physical acceptance:** fMP3 Player `0.1.1` was accepted on the Tab5 on
 31 October 2026 after the AAC/M4A playback reset was fixed and the user
-confirmed the firmware worked as intended.
+confirmed the firmware worked as intended. On 19 November 2026, after delivery
+of `0.1.3`, the user confirmed that all worked as intended; individual DAC
+model and test details were not specified.
 
 Version `0.1.2` adds an explicit Console return action, Tab5 Keyboard file
 navigation, and physical-keyboard Wi-Fi password entry without the software
 keyboard.
+
+Version `0.1.3` adds a two-stage playback lock. The lock button opens a
+full-screen album-art view; **SCREEN OFF** turns the backlight off and puts the
+ST7121 panel to sleep while audio continues. A keypress or screen tap wakes the
+lock view, and a separate **UNLOCK** action is required before the player
+controls return.
+
+The Tab5's built-in ESP32-C6 cannot transmit Bluetooth headphone audio:
+Espressif's [controller matrix](https://docs.espressif.com/projects/esp-idf/en/latest/esp32c6/api-guides/bt-architecture/overview.html)
+lists no Bluetooth Classic/BR-EDR support, and its
+[BLE feature matrix](https://docs.espressif.com/projects/esp-idf/en/latest/esp32c6/api-guides/ble/overview.html)
+lists no ISO or LE Audio support. A self-pairing, class-compliant USB-A
+Bluetooth audio transmitter is the supported wireless-headphone route. The
+player detects it as **USB Audio** and automatically moves the active stream;
+pairing remains on the transmitter itself. The I2C Tab5 Keyboard leaves the
+USB-A port available for this use.
+
+A USB-C DAC can use the same audio path through a USB-A-male to USB-C-female
+adapter. Connect it to the Tab5's USB-A host port, not the
+[Tab5 USB-C device/charging port](https://docs.m5stack.com/en/core/Tab5?id=schematics).
+The current driver accepts compatible USB Audio Class
+1 playback interfaces; UAC2-only DACs and asynchronous-feedback endpoints are
+not yet supported.
 
 The original upstream project documentation follows.
 

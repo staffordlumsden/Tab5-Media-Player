@@ -1,0 +1,58 @@
+reset
+imu rot0
+wait 500
+settle
+tap 360 226
+settle
+tap 360 320
+settle
+tap 360 160
+wait 200
+tap 360 160
+wait 1500
+capture audio_lock_player.jpg
+tap 660 1172
+wait 500
+capture audio_lock_portrait.jpg
+
+# Stage two: panel off. A normal key wakes but must not unlock; Enter is a
+# separate action against the focused Unlock button.
+tap 530 1055
+wait 300
+capture audio_lock_screen_off_keyboard.jpg
+kbd hid 0 0x04
+wait 300
+capture audio_lock_keyboard_wake.jpg
+kbd hid 0 0x28
+wait 500
+capture audio_lock_keyboard_unlock.jpg
+
+# Repeat with touch. The wake tap belongs to the black shield and must not fall
+# through to the Unlock button.
+tap 660 1172
+wait 300
+tap 530 1055
+wait 300
+tap 360 640
+wait 300
+capture audio_lock_touch_wake.jpg
+tap 190 1055
+wait 500
+capture audio_lock_touch_unlock.jpg
+
+imu rot90
+wait 500
+capture audio_lock_landscape_player.jpg
+tap 608 645
+wait 500
+capture audio_lock_landscape.jpg
+tap 488 180
+wait 300
+capture audio_lock_landscape_screen_off.jpg
+kbd hid 0 0x04
+wait 300
+capture audio_lock_landscape_wake.jpg
+kbd hid 0 0x28
+wait 500
+capture audio_lock_landscape_unlock.jpg
+imu release

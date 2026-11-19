@@ -1,6 +1,6 @@
-# fMP3 Player 0.1.2: Console Skin for Tab5
+# fMP3 Player 0.1.3: Console Skin for Tab5
 
-31 October 2026
+19 November 2026
 
 ## Scope
 
@@ -75,6 +75,62 @@ worked as intended beyond the previous reset point.
   Tab5 keyboard types directly into the password field; Enter connects and Esc
   cancels.
 
+## 0.1.3 Listening Lock
+
+- The audio player's volume row now has a lock action. It opens a full-screen,
+  orientation-aware lock view with the current album art, title and
+  artist/album metadata while playback continues.
+- **SCREEN OFF** sets the display backlight to zero, puts the MIPI panel into
+  sleep and places a full-panel input shield over the player. The framebuffer
+  and saved brightness setting are retained for a cheap resume without a full
+  redraw.
+- The first screen tap or physical-keyboard key wakes the album-art lock view
+  only. The shield is removed after that input finishes, preventing a wake tap
+  from falling through to **UNLOCK**.
+- **UNLOCK** is a separate action. On a keyboard, the first key wakes and a
+  subsequent Enter activates the focused Unlock button.
+- Returning to the player or leaving the screen always restores the configured
+  brightness and releases the keyboard focus lock.
+- The simulator verification covers portrait and landscape layout, full-black
+  screen-off, keyboard wake/unlock and touch wake/unlock. After SD delivery, the
+  user confirmed on 19 November 2026 that all worked as intended; the report
+  did not specify individual test steps or the DAC model.
+
+## Bluetooth Headphones
+
+Native Bluetooth headphone output cannot be implemented on the stock Tab5
+radio. Espressif's
+[ESP32-C6 controller matrix](https://docs.espressif.com/projects/esp-idf/en/latest/esp32c6/api-guides/bt-architecture/overview.html)
+lists BLE support but not Bluetooth Classic BR/EDR, so the C6 cannot act as an
+A2DP source for conventional headphones. The
+[BLE feature matrix](https://docs.espressif.com/projects/esp-idf/en/latest/esp32c6/api-guides/ble/overview.html)
+also lists ISO and LE Audio as unsupported on ESP32-C6, so a BLE scan/pair
+screen would not produce an audio route.
+
+The supported architecture is a self-pairing, USB Audio Class Bluetooth
+transmitter connected to USB-A:
+
+1. Pair the headphones using the transmitter's own button and indicators.
+2. Connect the transmitter to the Tab5 USB-A port.
+3. fMP3 automatically changes the active route to **USB Audio**, including an
+   already-playing stream, and uses either the adapter's volume feature or its
+   existing software-gain fallback.
+
+The M5Stack Tab5 Keyboard uses I2C, leaving USB-A available. A generic UAC
+adapter does not expose the radio's paired-headphone state, so the firmware can
+truthfully report the adapter connection but cannot claim that the headphones
+behind it are paired. A 3.5 mm analogue Bluetooth transmitter is another
+hardware-only fallback.
+
+A USB-C DAC is also usable when connected to the Tab5's USB-A host port through
+a USB-A-male to USB-C-female adapter. M5Stack documents the
+[Tab5 USB-C connector](https://docs.m5stack.com/en/core/Tab5?id=schematics) as
+the device/charging/flashing port; it is not the host port used by fMP3. The
+current host driver accepts USB Audio Class 1 playback interfaces with
+synchronous or adaptive output endpoints. UAC2-only devices and
+asynchronous-feedback output endpoints require additional host-driver work and
+will not be exposed as **USB Audio** in this release.
+
 ## Build Environment
 
 The upstream project pins ESP-IDF `6.1.0` at commit
@@ -92,15 +148,16 @@ same commit and the five patches under `esp-devkit/nix/patches/` are applied.
 
 ## Package Verification
 
-The 0.1.2 release build produced:
+The 0.1.3 release build produced:
 
 - image project: `Tab5fMP3Player`
-- image version: `0.1.2`
+- image version: `0.1.3`
 - target: ESP32-P4, 16 MB flash, minimum chip revision 1.0
-- image size: `4,790,944` bytes (`0x491aa0`), 451,936 bytes below the slot limit
-- SHA-256: `1412626c838eb635b4ab1996570c0099f7dfb70fff7d13f9326fb02cc07609ad`
+- image size: `4,794,528` bytes (`0x4928a0`), 448,352 bytes below the slot limit
+- SHA-256: `7c43a5e49f488a29b676abf5cb70c362abb23be467cf21f9f6bbef63f8e675ac`
 - maximum package size: 5,242,880 bytes
 - package validation: ESP image magic, chip ID, revision, segment checksum and
   appended SHA-256
-- on-device acceptance: 0.1.1 passed on 31 October 2026; the 0.1.2 Console
-  button and physical-keyboard controls require physical retest
+- on-device acceptance: 0.1.1 passed on 31 October 2026; following 0.1.3 SD
+  delivery, the user reported on 19 November 2026 that all worked as intended.
+  No individual test steps or DAC model were specified.

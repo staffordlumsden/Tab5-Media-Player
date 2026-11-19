@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <cstring>
 
 static constexpr uint32_t kRefreshPeriodMs = 500;
 static constexpr uint32_t kResolveTimeoutMs = 700;
@@ -31,6 +32,10 @@ static constexpr int32_t kPlaylistRowHeight = 72;
 static constexpr int32_t kThumbSide = 56;
 static constexpr ImageSize kThumbBox = { kThumbSide, kThumbSide };
 static constexpr int32_t kThumbRadius = 6;
+static constexpr int32_t kLockPad = 32;
+static constexpr int32_t kLockGap = 24;
+static constexpr int32_t kLockButtonHeight = 72;
+static constexpr int32_t kLockArtworkRadius = 24;
 static constexpr std::size_t kRowLookahead = 2;
 static constexpr ImageSize kArtworkBox = { kPlayerArtworkSide, kPlayerArtworkSide };
 /* LVGL draws through framebuffer 0 only. */
@@ -102,6 +107,7 @@ void AudioPlayerScreen::relayout() {
 }
 
 void AudioPlayerScreen::buildContents() {
+    if (lv_group_t *group = lv_group_get_default()) lv_group_focus_freeze(group, false);
     segment_ = nullptr;
     pane_box_ = nullptr;
     pane_view_ = nullptr;
@@ -112,6 +118,15 @@ void AudioPlayerScreen::buildContents() {
     artwork_ = nullptr;
     artwork_icon_ = nullptr;
     artwork_image_ = nullptr;
+    lock_overlay_ = nullptr;
+    lock_artwork_ = nullptr;
+    lock_artwork_icon_ = nullptr;
+    lock_artwork_image_ = nullptr;
+    lock_title_ = nullptr;
+    lock_subtitle_ = nullptr;
+    lock_unlock_button_ = nullptr;
+    lock_screen_off_button_ = nullptr;
+    lock_wake_shield_ = nullptr;
     title_label_ = nullptr;
     repeat_button_ = nullptr;
     repeat_label_ = nullptr;
@@ -155,6 +170,7 @@ void AudioPlayerScreen::buildContents() {
     setRepeatMode(repeat_);
     setShuffle(playlist_->shuffled());
     refresh();
+    if (lock_state_ != LockState::Unlocked) buildLockOverlay();
 }
 
 void AudioPlayerScreen::showPane(Pane pane) {
@@ -351,6 +367,243 @@ void AudioPlayerScreen::applyArtwork() {
     }
 }
 
+void AudioPlayerScreen::lockPlayback() {
+    if (lock_state_ != LockState::Unlocked) return;
+    lock_state_ = LockState::Locked;
+    buildLockOverlay();
+}
+
+void AudioPlayerScreen::unlockPlayback() {
+    if (lock_state_ == LockState::Unlocked) return;
+    lock_state_ = LockState::Unlocked;
+    bsp_display_set_power(BSP_DISPLAY_POWER_ON);
+    bsp_display_set_brightness(settings_display_brightness());
+    if (lv_group_t *group = lv_group_get_default()) lv_group_focus_freeze(group, false);
+
+    /* The event callback belongs to the overlay being removed. Rebuild on the
+     * next LVGL turn so the active callback is never deleted mid-dispatch. */
+    lv_async_call([this] {
+        if (s_active == this) buildContents();
+    });
+}
+
+void AudioPlayerScreen::configureLockKeyboard(bool screen_off) {
+    lv_group_t *group = lv_group_get_default();
+    lv_obj_t *target = screen_off ? lock_wake_shield_ : lock_unlock_button_;
+    if (!group || !target) return;
+
+    /* Keep every underlying screen's membership intact. Freezing focus confines
+     * Tab/arrow navigation to the lock target without emptying the shared group. */
+    lv_group_focus_freeze(group, false);
+    lv_group_remove_obj(target);
+    lv_group_add_obj(group, target);
+    lv_group_focus_obj(target);
+    lv_group_set_editing(group, false);
+    lv_group_focus_freeze(group, true);
+}
+
+void AudioPlayerScreen::buildLockOverlay() {
+    if (lock_overlay_ || lock_state_ == LockState::Unlocked) return;
+
+    const bool landscape = player_layout_landscape(root_);
+    const lv_color_t background = ui_theme::color(ui_theme::colors().bg);
+    const lv_color_t surface = ui_theme::color(ui_theme::colors().surface_pressed);
+    const lv_color_t foreground = ui_theme::color(ui_theme::colors().text);
+    const lv_color_t muted = ui_theme::color(ui_theme::colors().muted);
+
+    lock_overlay_ = lv_container_create(root_, background);
+    lv_obj_set_floating(lock_overlay_, true);
+    /* The landscape player reserves right padding on the root. Percent sizing
+     * uses that padded content box and would leave a visible edge exposed. */
+    lv_obj_set_size(lock_overlay_, lv_obj_get_width(root_), lv_obj_get_height(root_));
+    lv_obj_set_pos(lock_overlay_, 0, 0);
+    lv_obj_set_scrollable(lock_overlay_, false);
+    lv_obj_set_clickable(lock_overlay_, true);
+    lv_obj_set_flex_flow(lock_overlay_, landscape ? LV_FLEX_FLOW_ROW : LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(lock_overlay_, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
+                          LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_all(lock_overlay_, kLockPad, 0);
+    lv_obj_set_style_pad_row(lock_overlay_, kLockGap, 0);
+    lv_obj_set_style_pad_column(lock_overlay_, kLockGap * 2, 0);
+    lv_obj_set_style_text_color(lock_overlay_, foreground, 0);
+    lv_obj_move_foreground(lock_overlay_);
+
+    lock_artwork_ = lv_container_create(lock_overlay_, surface);
+    lv_obj_set_size(lock_artwork_, kPlayerArtworkSide, kPlayerArtworkSide);
+    lv_obj_set_style_radius(lock_artwork_, kLockArtworkRadius, 0);
+    lv_obj_set_style_clip_corner(lock_artwork_, true, 0);
+    lv_obj_set_scrollable(lock_artwork_, false);
+    resetLockArtwork();
+    applyLockArtwork();
+
+    lv_obj_t *details = lv_container_create(lock_overlay_, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_size(details, landscape ? LV_SIZE_CONTENT : lv_pct(100),
+                    landscape ? lv_pct(100) : LV_SIZE_CONTENT);
+    lv_obj_set_flex_grow(details, 1);
+    lv_obj_set_flex_align(details, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER,
+                          LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_row(details, kLockGap, 0);
+
+    lv_obj_t *heading = lv_container_create(details, LV_FLEX_FLOW_ROW);
+    lv_obj_set_size(heading, LV_SIZE_CONTENT, 48);
+    lv_obj_set_style_pad_column(heading, 16, 0);
+    lv_obj_t *lock_icon = lv_label_create(heading);
+    lv_obj_set_style_text_font(lock_icon, &icon_36, 0);
+    lv_label_set_text(lock_icon, TABLER_LOCK);
+    lv_obj_t *locked = lv_label_create(heading);
+    lv_obj_set_font_role(locked, LV_WIDGETS_FONT_HEADING);
+    lv_label_set_text(locked, "PLAYBACK LOCKED");
+
+    lock_title_ = lv_label_create(details);
+    lv_obj_set_width(lock_title_, lv_pct(100));
+    lv_obj_set_height(lock_title_,
+                      lv_font_get_line_height(lv_widgets_resolved_font(LV_WIDGETS_FONT_TITLE)));
+    lv_obj_set_font_role(lock_title_, LV_WIDGETS_FONT_TITLE);
+    lv_obj_set_style_text_align(lock_title_, LV_TEXT_ALIGN_CENTER, 0);
+    lv_label_set_long_mode(lock_title_, LV_LABEL_LONG_MODE_SCROLL_CIRCULAR);
+
+    lock_subtitle_ = lv_label_create(details);
+    lv_obj_set_width(lock_subtitle_, lv_pct(100));
+    lv_obj_set_height(lock_subtitle_,
+                      lv_font_get_line_height(lv_widgets_resolved_font(LV_WIDGETS_FONT_BODY)));
+    lv_obj_set_font_role(lock_subtitle_, LV_WIDGETS_FONT_BODY);
+    lv_obj_set_style_text_align(lock_subtitle_, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_text_color(lock_subtitle_, muted, 0);
+    lv_label_set_long_mode(lock_subtitle_, LV_LABEL_LONG_MODE_SCROLL_CIRCULAR);
+
+    lv_obj_t *prompt = lv_label_create(details);
+    lv_obj_set_width(prompt, lv_pct(100));
+    lv_obj_set_font_role(prompt, LV_WIDGETS_FONT_CAPTION);
+    lv_obj_set_style_text_align(prompt, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_text_color(prompt, muted, 0);
+    lv_label_set_long_mode(prompt, LV_LABEL_LONG_MODE_WRAP);
+    lv_label_set_text(prompt, "PLAYBACK CONTINUES  ·  WAKE FIRST, THEN UNLOCK");
+
+    lv_obj_t *actions = lv_container_create(details, LV_FLEX_FLOW_ROW);
+    lv_obj_set_size(actions, lv_pct(100), kLockButtonHeight);
+    lv_obj_set_style_pad_column(actions, 16, 0);
+
+    lock_unlock_button_ = lv_button_create(actions, LV_BUTTON_STYLE_PRIMARY);
+    lv_obj_set_height(lock_unlock_button_, kLockButtonHeight);
+    lv_obj_set_flex_grow(lock_unlock_button_, 1);
+    lv_button_set_text(lock_unlock_button_, "UNLOCK");
+    lv_obj_add_event_fn(lock_unlock_button_, LV_EVENT_CLICKED,
+                        [this](lv_event_t *) { unlockPlayback(); });
+
+    lock_screen_off_button_ = lv_button_create(actions, LV_BUTTON_STYLE_SECONDARY);
+    lv_obj_set_height(lock_screen_off_button_, kLockButtonHeight);
+    lv_obj_set_flex_grow(lock_screen_off_button_, 1);
+    lv_button_set_text(lock_screen_off_button_, "SCREEN OFF");
+    lv_obj_add_event_fn(lock_screen_off_button_, LV_EVENT_CLICKED,
+                        [this](lv_event_t *) { enterScreenOff(); });
+
+    updateLockText();
+    if (lock_state_ == LockState::ScreenOff) {
+        buildWakeShield();
+    } else {
+        configureLockKeyboard(false);
+    }
+}
+
+void AudioPlayerScreen::resetLockArtwork() {
+    if (!lock_artwork_) return;
+    if (lock_artwork_image_) {
+        lv_obj_delete(lock_artwork_image_);
+        lock_artwork_image_ = nullptr;
+    }
+    if (lock_artwork_icon_) return;
+
+    lock_artwork_icon_ = lv_label_create(lock_artwork_);
+    lv_label_set_text(lock_artwork_icon_, TABLER_MUSIC);
+    lv_obj_set_style_text_font(lock_artwork_icon_, &icon_120, 0);
+    lv_obj_set_style_text_color(lock_artwork_icon_,
+                                ui_theme::color(player_artwork_icon_color()), 0);
+    lv_obj_center(lock_artwork_icon_);
+}
+
+void AudioPlayerScreen::applyLockArtwork() {
+    if (!lock_artwork_ || lock_artwork_image_ || !cover_size_.valid()) return;
+    auto *buffer = static_cast<uint8_t *>(bsp_display_get_frame_buffer(kArtworkFramebuffer));
+    const bool rgb888 = bsp_display_get_pixel_format() == BSP_PIXEL_FORMAT_RGB888;
+    lock_artwork_image_ = image_object_create(lock_artwork_, buffer, cover_size_, rgb888);
+    if (!lock_artwork_image_) return;
+    if (lock_artwork_icon_) {
+        lv_obj_delete(lock_artwork_icon_);
+        lock_artwork_icon_ = nullptr;
+    }
+}
+
+void AudioPlayerScreen::updateLockText() {
+    if (lock_title_ && strcmp(lv_label_get_text(lock_title_), shown_title_.c_str()) != 0) {
+        player_scrolling_text_set(lock_title_, shown_title_);
+    }
+    if (lock_subtitle_ && strcmp(lv_label_get_text(lock_subtitle_), shown_subtitle_.c_str()) != 0) {
+        player_scrolling_text_set(lock_subtitle_, shown_subtitle_);
+    }
+}
+
+void AudioPlayerScreen::buildWakeShield() {
+    if (!lock_overlay_ || lock_wake_shield_) return;
+    /* Keep the wake target outside the overlay's padded flex layout so it is a
+     * true full-panel shield, not another album-art/details row. */
+    lock_wake_shield_ = lv_container_create(root_, lv_color_black());
+    lv_obj_set_floating(lock_wake_shield_, true);
+    lv_obj_set_size(lock_wake_shield_, lv_obj_get_width(root_), lv_obj_get_height(root_));
+    lv_obj_set_pos(lock_wake_shield_, 0, 0);
+    lv_obj_set_scrollable(lock_wake_shield_, false);
+    lv_obj_set_clickable(lock_wake_shield_, true);
+    lv_obj_move_foreground(lock_wake_shield_);
+
+    lv_obj_add_event_fn(lock_wake_shield_, LV_EVENT_PRESSED, [this](lv_event_t *event) {
+        if (lock_state_ != LockState::ScreenOff) return;
+        wakeFromScreenOff();
+        lv_event_stop_processing(event);
+    });
+    lv_obj_add_event_fn(lock_wake_shield_, LV_EVENT_RELEASED, [this](lv_event_t *event) {
+        if (lock_state_ != LockState::Locked) return;
+        finishTouchWake();
+        lv_event_stop_processing(event);
+    });
+    lv_obj_add_event_fn(lock_wake_shield_, LV_EVENT_PRESS_LOST, [this](lv_event_t *event) {
+        if (lock_state_ != LockState::Locked) return;
+        finishTouchWake();
+        lv_event_stop_processing(event);
+    });
+    lv_obj_add_event_fn(lock_wake_shield_, LV_EVENT_KEY, [this](lv_event_t *event) {
+        if (lock_state_ != LockState::ScreenOff) return;
+        wakeFromScreenOff();
+        finishTouchWake();
+        lv_event_stop_processing(event);
+    });
+    configureLockKeyboard(true);
+}
+
+void AudioPlayerScreen::enterScreenOff() {
+    if (lock_state_ != LockState::Locked) return;
+    lock_state_ = LockState::ScreenOff;
+    buildWakeShield();
+    bsp_display_set_brightness(0);
+    bsp_display_set_power(BSP_DISPLAY_POWER_SLEEP);
+}
+
+void AudioPlayerScreen::wakeFromScreenOff() {
+    if (lock_state_ != LockState::ScreenOff) return;
+    lock_state_ = LockState::Locked;
+    bsp_display_set_power(BSP_DISPLAY_POWER_ON);
+    bsp_display_set_brightness(settings_display_brightness());
+}
+
+void AudioPlayerScreen::finishTouchWake() {
+    /* A touch release still belongs to the shield. Remove it asynchronously so
+     * that release cannot land on UNLOCK and collapse the two-step contract. */
+    lv_async_call([this] {
+        if (s_active != this || lock_state_ != LockState::Locked || !lock_wake_shield_) return;
+        lv_obj_delete(lock_wake_shield_);
+        lock_wake_shield_ = nullptr;
+        configureLockKeyboard(false);
+    });
+}
+
 std::string AudioPlayerScreen::currentTitle() const {
     if (meta_ && meta_->title[0]) return meta_->title;
     return name();
@@ -474,6 +727,10 @@ void AudioPlayerScreen::buildVolumeRow(lv_obj_t *controls) {
                                   ui_theme::color(player_track_color()));
     lv_obj_set_flex_grow(volume_slider_, 1);
     media_volume_bind(mute, volume_label_, volume_slider_);
+
+    lv_obj_t *lock = media_icon_button(row.right, kPlayerIconButton, &icon_36, TABLER_LOCK,
+                                       foreground);
+    lv_obj_add_event_fn(lock, LV_EVENT_CLICKED, [this](lv_event_t *) { lockPlayback(); });
 }
 
 void AudioPlayerScreen::openCurrent() {
@@ -482,6 +739,7 @@ void AudioPlayerScreen::openCurrent() {
     cover_size_ = {};
     meta_ = nullptr;
     resetArtwork();
+    resetLockArtwork();
     requestMeta();
     player_open(path());
     player_set_loop(repeat_ == RepeatMode::One);
@@ -636,6 +894,8 @@ void AudioPlayerScreen::refresh() {
             subtitle_label_, ui_theme::color(failed ? ui_theme::colors().warning
                                                     : player_subtitle_color()), 0);
     }
+    applyLockArtwork();
+    updateLockText();
 }
 
 std::size_t AudioPlayerScreen::rowCount() const {
@@ -741,6 +1001,12 @@ void AudioPlayerScreen::onEnter() {
 }
 
 void AudioPlayerScreen::onExit() {
+    if (lock_state_ != LockState::Unlocked) {
+        lock_state_ = LockState::Unlocked;
+        bsp_display_set_power(BSP_DISPLAY_POWER_ON);
+        bsp_display_set_brightness(settings_display_brightness());
+    }
+    if (lv_group_t *group = lv_group_get_default()) lv_group_focus_freeze(group, false);
     if (s_active == this) s_active = nullptr;
     media_cache_unobserve(token_);
     media_cache_cancel(token_);

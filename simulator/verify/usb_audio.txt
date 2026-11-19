@@ -2,7 +2,7 @@ reset
 imu rot0
 wait 500
 settle
-tap 360 706
+tap 360 632
 settle
 capture usb_audio_sound_speaker.jpg
 usbh-uac-attach captures/usb_audio_pcm.wav
@@ -12,9 +12,9 @@ tap 60 60
 settle
 tap 360 226
 settle
-tap 360 320
+tap 360 160
 settle
-tap 360 400
+tap 360 160
 wait 7500
 usbh-uac-detach
 settle
